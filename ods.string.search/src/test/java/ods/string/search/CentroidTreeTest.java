@@ -24,7 +24,7 @@ public class CentroidTreeTest
 	{
 		CentroidTree tree = new CentroidTree(new File("target/centroidTree"));
 		TreeSet<String> set = new TreeSet<String>();
-		Random rand = new Random(1);
+		Random rand = new Random();
 
 		for (int x = 0; x < 10000; x++)
 		{
@@ -45,6 +45,18 @@ public class CentroidTreeTest
 			for (int y = 0; y < inputLength; y++)
 				input += (char) (rand.nextInt(10) + '0');
 			assertEquals(set.contains(input), tree.contains(input));
+		}
+
+		for (int x = 0; x < 10000; x++)
+		{
+			int inputLength = rand.nextInt(4) + 1;
+			String input = "";
+			for (int y = 0; y < inputLength; y++)
+				input += (char) (rand.nextInt(10) + '0');
+			boolean centroidResult = tree.remove(input);
+			boolean treeResult = set.remove(input);
+			assertEquals(treeResult, centroidResult);
+			assertEquals(set.size(), tree.size());
 		}
 	}
 }

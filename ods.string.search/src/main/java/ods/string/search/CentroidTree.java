@@ -2,8 +2,6 @@ package ods.string.search;
 
 import java.io.File;
 import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Random;
 
 public class CentroidTree
 {
@@ -11,11 +9,12 @@ public class CentroidTree
 	private CentroidTreeNode emptyNode = new CentroidTreeNode(100);
 	private long size = 0l;
 	private File treeDirectory;
+	private BstTreeIndexLayout indexLayout = new VebIndexLayout();
 
 	public CentroidTree(File treeDirectory)
 	{
 		this.treeDirectory = treeDirectory;
-		array = new ExternalMemoryCache<CentroidTreeNode>(treeDirectory, 10000000);
+		array = new ExternalMemoryCache<CentroidTreeNode>(treeDirectory, 200000000);
 	}
 
 	public boolean insert(String value)
@@ -32,7 +31,7 @@ public class CentroidTree
 		{
 			int newNodes = 1;
 			CentroidTreeNode parentNode = new CentroidTreeNode(100);
-			long parentIndex = getParentIndex(insertIndex);
+			long parentIndex = indexLayout.getParentIndex(insertIndex);
 			array.get(parentIndex, parentNode);
 			if (node.getStringBitLength() == 0)
 			{
@@ -41,7 +40,7 @@ public class CentroidTree
 				parentNode.setValueEnd(true);
 				array.set(parentIndex, parentNode);
 				newNodes = 0;
-			} else if (insertIndex == getLeftChildIndex(parentIndex))
+			} else if (insertIndex == indexLayout.getLeftChildIndex(parentIndex))
 			{
 				CentroidTreeNode.splitOnPrefix(parentNode, node);
 				if (parentNode.getStringBitLength() == 0)
@@ -57,7 +56,7 @@ public class CentroidTree
 					parentNode.setSubtreeSize(2);
 					parentNode.setValueEnd(false);
 					insertAt(insertIndex, parentNode);
-					insertAt(getRightChildIndex(insertIndex), node);
+					insertAt(indexLayout.getRightChildIndex(insertIndex), node);
 					newNodes = 2;
 				}
 			} else
@@ -75,7 +74,7 @@ public class CentroidTree
 						unbalancedIndex = parentIndex;
 					parentNode.setSubtreeSize(parentNode.getSubtreeSize() + newNodes);
 					array.set(parentIndex, parentNode);
-					parentIndex = getParentIndex(parentIndex);
+					parentIndex = indexLayout.getParentIndex(parentIndex);
 				}
 				if (unbalancedIndex != -1)
 					rebalanceSubTree(unbalancedIndex);
@@ -89,8 +88,8 @@ public class CentroidTree
 	private void insertAt(long insertIndex, CentroidTreeNode node)
 	{
 		array.set(insertIndex, node);
-		array.set(getLeftChildIndex(insertIndex), emptyNode);
-		array.set(getRightChildIndex(insertIndex), emptyNode);
+		array.set(indexLayout.getLeftChildIndex(insertIndex), emptyNode);
+		array.set(indexLayout.getRightChildIndex(insertIndex), emptyNode);
 	}
 
 	private void insertStartingFrom(CentroidTreeNode node, long startIndex)
@@ -99,14 +98,14 @@ public class CentroidTree
 		long insertIndex = findIndex(node, startIndex);
 		insertAt(insertIndex, node);
 		CentroidTreeNode parentNode = new CentroidTreeNode(100);
-		long parentIndex = getParentIndex(insertIndex);
+		long parentIndex = indexLayout.getParentIndex(insertIndex);
 
 		while (parentIndex >= startIndex)
 		{
 			array.get(parentIndex, parentNode);
 			parentNode.setSubtreeSize(parentNode.getSubtreeSize() + 1);
 			array.set(parentIndex, parentNode);
-			parentIndex = getParentIndex(parentIndex);
+			parentIndex = indexLayout.getParentIndex(parentIndex);
 		}
 	}
 
@@ -118,7 +117,7 @@ public class CentroidTree
 		if (node.getStringBitLength() != 0)
 			return false;
 
-		array.get(getParentIndex(index), node);
+		array.get(indexLayout.getParentIndex(index), node);
 		return node.isValueEnd();
 	}
 
@@ -136,18 +135,36 @@ public class CentroidTree
 			} else if (commonBits == curNode.getStringBitLength())
 			{
 				CentroidTreeNode.splitOnPrefix(curNode, matchNode);
-				index = getRightChildIndex(index);
+				index = indexLayout.getRightChildIndex(index);
 			} else
 			{
-				index = getLeftChildIndex(index);
+				index = indexLayout.getLeftChildIndex(index);
 			}
 		}
 		return index;
 	}
 
-	public void remove(String value)
+	public boolean remove(String value)
 	{
+		CentroidTreeNode node = new CentroidTreeNode(100);
+		node.setString(value);
+		long insertIndex = findIndex(node, 0);
 
+		if (node.getStringBitLength() == 0)
+		{
+			insertIndex = indexLayout.getParentIndex(insertIndex);
+			if (insertIndex < 0)
+				return false;
+			array.get(insertIndex, node);
+			if (node.isValueEnd())
+			{
+				node.setValueEnd(false);
+				size--;
+				array.set(insertIndex, node);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public long size()
@@ -155,45 +172,12 @@ public class CentroidTree
 		return size;
 	}
 
-	private long getLeftChildIndex(long nodeIndex)
-	{
-		// long result = nodeIndex;
-		// result++;
-		//
-		// int[] indices = new int[7];
-		// int cur = 0;
-		// for (int x = 32; x >= 0; x /= 2)
-		// {
-		// long mask = (1l << x);
-		// int index = -1;
-		// if (result > mask)
-		// {
-		// result -= mask;
-		// index = (int) (result / (mask - 1));
-		// result -= index * (mask - 1);
-		// }
-		// indices[cur++] = index;
-		// }
-
-		return (nodeIndex + 1) * 2 - 1;
-	}
-
-	private long getRightChildIndex(long nodeIndex)
-	{
-		return (nodeIndex + 1) * 2;
-	}
-
-	private long getParentIndex(long nodeIndex)
-	{
-		return (nodeIndex + 1) / 2 - 1;
-	}
-
 	private boolean isNodeBalanced(long nodeIndex)
 	{
 		CentroidTreeNode node = new CentroidTreeNode(100);
-		array.get(getLeftChildIndex(nodeIndex), node);
+		array.get(indexLayout.getLeftChildIndex(nodeIndex), node);
 		long leftSize = node.getSubtreeSize() + 1;
-		array.get(getRightChildIndex(nodeIndex), node);
+		array.get(indexLayout.getRightChildIndex(nodeIndex), node);
 		long rightSize = node.getSubtreeSize() + 1;
 		double ratio = (double) leftSize / rightSize;
 		return ratio >= 0.1 && ratio <= 10;
@@ -206,33 +190,18 @@ public class CentroidTree
 		CentroidTreeNode node = new CentroidTreeNode(100);
 		copySubtree(startIndex, 0, tourArray, node);
 
-		array.get(getLeftChildIndex(startIndex), node);
+		array.get(indexLayout.getLeftChildIndex(startIndex), node);
 		long startLeft = node.getSubtreeSize();
-		array.get(getRightChildIndex(startIndex), node);
+		array.get(indexLayout.getRightChildIndex(startIndex), node);
 		long startRight = node.getSubtreeSize();
 		System.out.println("Before rebalance: left: " + startLeft + " right: " + startRight);
-
-		// ArrayDeque<Long> startIndices = new ArrayDeque<Long>();
-		// startIndices.add(0l);
-		// while (!startIndices.isEmpty())
-		// {
-		// long x = startIndices.removeLast();
-		// tourArray.get(x, node);
-		// System.out.println(x + " " + node.getSubtreeSize() + " " + node.isValueEnd() + " "
-		// + node);
-		// if (node.getSubtreeSize() != 0)
-		// {
-		// startIndices.add(getRightChildIndex(x));
-		// startIndices.add(getLeftChildIndex(x));
-		// }
-		// }
 
 		insertAt(startIndex, emptyNode);
 		centroidSplit(tourArray, node, startIndex);
 
-		array.get(getLeftChildIndex(startIndex), node);
+		array.get(indexLayout.getLeftChildIndex(startIndex), node);
 		startLeft = node.getSubtreeSize();
-		array.get(getRightChildIndex(startIndex), node);
+		array.get(indexLayout.getRightChildIndex(startIndex), node);
 		startRight = node.getSubtreeSize();
 		System.out.println("After rebalance: left: " + startLeft + " right: " + startRight);
 	}
@@ -251,10 +220,10 @@ public class CentroidTree
 		resultArray.set(insertionIndex, node);
 		if (node.getSubtreeSize() > 1)
 		{
-			copySubtree(getLeftChildIndex(treeIndex), getLeftChildIndex(insertionIndex),
-					resultArray, currentPrefix);
-			copySubtree(getRightChildIndex(treeIndex), getRightChildIndex(insertionIndex),
-					resultArray, newPrefix);
+			copySubtree(indexLayout.getLeftChildIndex(treeIndex),
+					indexLayout.getLeftChildIndex(insertionIndex), resultArray, currentPrefix);
+			copySubtree(indexLayout.getRightChildIndex(treeIndex),
+					indexLayout.getRightChildIndex(insertionIndex), resultArray, newPrefix);
 		}
 	}
 
@@ -286,25 +255,27 @@ public class CentroidTree
 				data.get(checkIndex, node);
 				if (node.getSubtreeSize() == -1)
 				{
-					checkIndex = getParentIndex(checkIndex);
+					checkIndex = indexLayout.getParentIndex(checkIndex);
 					continue;
 				}
 				parentSize = totalSize - node.getSubtreeSize();
-				leftIndex = getLeftChildIndex(checkIndex);
+				leftIndex = indexLayout.getLeftChildIndex(checkIndex);
 				data.get(leftIndex, node);
 				leftSize = node.getSubtreeSize();
-				rightIndex = getRightChildIndex(checkIndex);
+				rightIndex = indexLayout.getRightChildIndex(checkIndex);
 				data.get(rightIndex, node);
 				rightSize = node.getSubtreeSize();
-				rightParent = (getRightChildIndex(getParentIndex(checkIndex)) == checkIndex);
+				rightParent = (indexLayout.getRightChildIndex(indexLayout
+						.getParentIndex(checkIndex)) == checkIndex);
 
 				while (leftSize == -1 && parentSize + 1 < totalSize)
 				{
-					boolean rightParentz = (getRightChildIndex(getParentIndex(leftIndex)) == leftIndex);
+					boolean rightParentz = (indexLayout.getRightChildIndex(indexLayout
+							.getParentIndex(leftIndex)) == leftIndex);
 					if (rightParentz)
-						leftIndex = getLeftChildIndex(leftIndex);
+						leftIndex = indexLayout.getLeftChildIndex(leftIndex);
 					else
-						leftIndex = getRightChildIndex(leftIndex);
+						leftIndex = indexLayout.getRightChildIndex(leftIndex);
 					data.get(leftIndex, node);
 					leftSize = node.getSubtreeSize();
 				}
@@ -315,11 +286,12 @@ public class CentroidTree
 
 				while (rightSize == -1 && parentSize + leftSize + 1 < totalSize)
 				{
-					boolean rightParentz = (getRightChildIndex(getParentIndex(rightIndex)) == rightIndex);
+					boolean rightParentz = (indexLayout.getRightChildIndex(indexLayout
+							.getParentIndex(rightIndex)) == rightIndex);
 					if (rightParentz)
-						rightIndex = getLeftChildIndex(rightIndex);
+						rightIndex = indexLayout.getLeftChildIndex(rightIndex);
 					else
-						rightIndex = getRightChildIndex(rightIndex);
+						rightIndex = indexLayout.getRightChildIndex(rightIndex);
 					data.get(rightIndex, node);
 					rightSize = node.getSubtreeSize();
 				}
@@ -328,47 +300,10 @@ public class CentroidTree
 					rightSize = 0;
 				}
 
-				// long nonPrefixers = leftSize;
-				// long prefixers = rightSize;
-				// if (parentSize > 0 && rightParent)
-				// {
-				// nonPrefixers += 2. * parentSize / 4 + 1;
-				// prefixers += parentSize / 4.;
-				// } else if (parentSize > 0)
-				// {
-				// prefixers += 2. * parentSize / 4 + 1;
-				// nonPrefixers += parentSize / 4.;
-				// }
-				//
-				// long moveIndex = -1;
-				// if (prefixers > nonPrefixers * 3 + 2)
-				// {
-				// if (parentSize > 0 && !rightParent)
-				// {
-				// long parentNonPrefixes = leftSize + rightSize + 1;
-				// long parentPrefixes = parentSize - 1;
-				// if (parentPrefixes > parentNonPrefixes)
-				// moveIndex = getParentIndex(checkIndex);
-				// }
-				// if (moveIndex == -1)
-				// moveIndex = rightIndex;
-				// } else if (nonPrefixers > prefixers * 3 + 2)
-				// {
-				// if (parentSize > 0 && rightParent)
-				// {
-				// long parentPrefixes = leftSize + rightSize + 1;
-				// long parentNonPrefixes = parentSize - 1;
-				// if (parentNonPrefixes > parentPrefixes)
-				// moveIndex = getParentIndex(checkIndex);
-				// }
-				// if (moveIndex == -1)
-				// moveIndex = leftIndex;
-				// }
-
 				long moveIndex = -1;
 				if (parentSize > rightSize + leftSize + 1)
 				{
-					moveIndex = getParentIndex(checkIndex);
+					moveIndex = indexLayout.getParentIndex(checkIndex);
 				} else if (leftSize > rightSize + parentSize + 1)
 				{
 					moveIndex = leftIndex;
@@ -395,7 +330,7 @@ public class CentroidTree
 			if (parentSize > 0)
 			{
 				long updateIndex = checkIndex;
-				while ((updateIndex = getParentIndex(updateIndex)) >= 0)
+				while ((updateIndex = indexLayout.getParentIndex(updateIndex)) >= 0)
 				{
 					data.get(updateIndex, node);
 					if (node.getSubtreeSize() == -1)
@@ -431,94 +366,6 @@ public class CentroidTree
 				totalSizes.add(rightSize);
 			}
 		}
-
-		// startIndices.add(0l);
-		// while (!startIndices.isEmpty())
-		// {
-		// long x = startIndices.remove();
-		// data.get(x, node);
-		// System.out.println(x + " " + node.getSubtreeSize());
-		// if (node.getSubtreeSize() != 0)
-		// {
-		// startIndices.add(getLeftChildIndex(x));
-		// startIndices.add(getRightChildIndex(x));
-		// }
-		// }
-	}
-
-	private long inOrderTour(long treeIndex, long insertionIndex,
-			ExternalMemoryCache<CentroidTreeNode> resultArray, CentroidTreeNode currentPrefix)
-	{
-		CentroidTreeNode node = new CentroidTreeNode(100);
-		array.get(treeIndex, node);
-		if (node.getStringBitLength() == 0)
-			return insertionIndex;
-
-		insertionIndex = inOrderTour(getLeftChildIndex(treeIndex), insertionIndex, resultArray,
-				currentPrefix);
-		CentroidTreeNode.appendOnNode(currentPrefix, node);
-		currentPrefix.setValueEnd(node.isValueEnd());
-		resultArray.set(insertionIndex, currentPrefix);
-		insertionIndex++;
-		insertionIndex = inOrderTour(getRightChildIndex(treeIndex), insertionIndex, resultArray,
-				currentPrefix);
-		currentPrefix.setBitsUsed(currentPrefix.getStringBitLength() - node.getStringBitLength());
-		return insertionIndex;
-	}
-
-	private void preOrderTour(ExternalMemoryCache<CentroidTreeNode> tourArray, long insertionIndex,
-			long startIndex, long endIndex, CentroidTreeNode node)
-	{
-		// long middleIndex = (endIndex - startIndex) / 2 + startIndex;
-		// tourArray.get(middleIndex, node);
-		// insertStartingFrom(node, insertionIndex);
-		// if (middleIndex - startIndex > 0)
-		// preOrderTour(tourArray, insertionIndex, startIndex, middleIndex, node);
-		// if (endIndex - middleIndex - 1 > 0)
-		// preOrderTour(tourArray, insertionIndex, middleIndex + 1, endIndex, node);
-
-		ArrayDeque<Long> startIndices = new ArrayDeque<Long>();
-		startIndices.push(startIndex);
-		startIndices.push(endIndex);
-		while (startIndices.size() > 0)
-		{
-			startIndex = startIndices.removeLast();
-			endIndex = startIndices.removeLast();
-			long middleIndex = (endIndex - startIndex) / 2 + startIndex;
-			tourArray.get(middleIndex, node);
-			insertStartingFrom(node, insertionIndex);
-			if (middleIndex - startIndex > 0)
-			{
-				startIndices.push(startIndex);
-				startIndices.push(middleIndex);
-			}
-			if (endIndex - middleIndex - 1 > 0)
-			{
-				startIndices.push(middleIndex + 1);
-				startIndices.push(endIndex);
-			}
-		}
-	}
-
-	private void randomOrderTour(ExternalMemoryCache<CentroidTreeNode> tourArray,
-			long insertionIndex, long startIndex, long endIndex, CentroidTreeNode node)
-	{
-		HashSet<Long> insertedIndices = new HashSet<Long>();
-		Random rand = new Random();
-
-		long size = endIndex - startIndex + 1;
-		while (insertedIndices.size() < size)
-		{
-			long nextIndex = Math.abs(rand.nextLong()) % size + startIndex;
-			if (!insertedIndices.contains(nextIndex))
-			{
-				insertedIndices.add(nextIndex);
-				tourArray.get(nextIndex, node);
-				insertStartingFrom(node, insertionIndex);
-			}
-		}
-
-		System.out.println(insertedIndices.size());
 	}
 
 	public String toString()
@@ -541,8 +388,8 @@ public class CentroidTree
 				result += node.toString() + ", ";
 			if (node.getSubtreeSize() > 1)
 			{
-				indices.add(getLeftChildIndex(index));
-				indices.add(getRightChildIndex(index));
+				indices.add(indexLayout.getLeftChildIndex(index));
+				indices.add(indexLayout.getRightChildIndex(index));
 			}
 		}
 		return result;

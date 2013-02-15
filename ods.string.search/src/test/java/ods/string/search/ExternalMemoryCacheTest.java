@@ -30,12 +30,12 @@ public class ExternalMemoryCacheTest
 		cache.get(0, node);
 		assertEquals("awwww yea", node.toString());
 
-		for (int x = 0; x < 10000000; x++)
+		for (int x = 0; x < 1000000; x++)
 		{
 			node.setString(x + "");
 			cache.set(x, node);
 		}
-		for (int x = 0; x < 10000000; x++)
+		for (int x = 0; x < 1000000; x++)
 		{
 			cache.get(x, node);
 			assertEquals(x + "", node.toString());
@@ -52,14 +52,14 @@ public class ExternalMemoryCacheTest
 		Random rand = new Random();
 		HashSet<Integer> inserts = new HashSet<Integer>();
 
-		for (int x = 0; x < 100000; x++)
+		for (int x = 0; x < 10000; x++)
 		{
 			int randNum = rand.nextInt(100000);
 			inserts.add(randNum);
 			node.setString(randNum + "");
 			cache.set(randNum, node);
 		}
-		for (int x = 0; x < 100000; x++)
+		for (int x = 0; x < 10000; x++)
 		{
 			int randNum = rand.nextInt(100000);
 			cache.get(randNum, node);

@@ -49,6 +49,9 @@ public class ExternalMemoryCache<T extends ExternalMemoryNode>
 
 	public void set(long index, T data)
 	{
+		if (index < 0)
+			throw new IllegalArgumentException("Array index must be 0 or higher. Index=" + index);
+
 		int indicesPerBlock = blockSize / data.byteSize();
 		long block = index / indicesPerBlock;
 		Block blockBytes = getBlock(block);
@@ -59,6 +62,9 @@ public class ExternalMemoryCache<T extends ExternalMemoryNode>
 
 	public void get(long index, T result)
 	{
+		if (index < 0)
+			throw new IllegalArgumentException("Array index must be 0 or higher. Index=" + index);
+
 		int indicesPerBlock = blockSize / result.byteSize();
 		long block = index / indicesPerBlock;
 		Block blockBytes = getBlock(block);
