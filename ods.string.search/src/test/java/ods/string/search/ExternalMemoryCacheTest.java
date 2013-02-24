@@ -15,7 +15,7 @@ public class ExternalMemoryCacheTest
 	@Before
 	public void setup()
 	{
-		Assert.assertTrue(deleteRecursively(new File("target/blocks")));
+		Assert.assertTrue(Utils.deleteRecursively(new File("target/blocks")));
 	}
 
 	@Test
@@ -92,19 +92,5 @@ public class ExternalMemoryCacheTest
 			assertEquals(x + "", node.toString());
 		}
 		cache.close();
-	}
-
-	public static boolean deleteRecursively(File file)
-	{
-		if (!file.exists())
-			return true;
-		if (file.isDirectory())
-		{
-			for (File f : file.listFiles())
-			{
-				deleteRecursively(f);
-			}
-		}
-		return file.delete();
 	}
 }

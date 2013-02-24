@@ -15,8 +15,7 @@ public class CentroidTreeTest
 	@Before
 	public void setup()
 	{
-		Assert.assertTrue(ExternalMemoryCacheTest
-				.deleteRecursively(new File("target/centroidTree")));
+		Assert.assertTrue(Utils.deleteRecursively(new File("target/centroidTree")));
 	}
 
 	@Test

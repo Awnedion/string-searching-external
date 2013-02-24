@@ -5,8 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 
-import ods.string.search.CentroidTreeNode;
-
 import org.junit.Test;
 
 public class CentroidTreeNodeTest
@@ -28,6 +26,42 @@ public class CentroidTreeNodeTest
 		assertEquals("yo", node2.toString());
 		assertEquals(3, node2.getSubtreeSize());
 		assertEquals(16, node2.getStringBitLength());
+		assertEquals(true, node2.isValueEnd());
+	}
+
+	@Test
+	public void testSerializationSmallerString()
+	{
+		CentroidTreeNode node = new CentroidTreeNode(50);
+		node.setString("yoplay");
+		node.setSubtreeSize(3);
+		node.setValueEnd(true);
+		node.setBitsUsed(16);
+
+		ByteBuffer buffer = ByteBuffer.allocate(1000);
+		node.writeBytes(buffer, 0);
+
+		CentroidTreeNode node2 = new CentroidTreeNode(50);
+		node2.setFromBytes(buffer, 0);
+		assertEquals("yo", node2.toString());
+		assertEquals(3, node2.getSubtreeSize());
+		assertEquals(16, node2.getStringBitLength());
+		assertEquals(true, node2.isValueEnd());
+
+		node = new CentroidTreeNode(50);
+		node.setString("21412512215125125");
+		node.setSubtreeSize(3);
+		node.setValueEnd(true);
+		node.setBitsUsed(32);
+
+		buffer = ByteBuffer.allocate(1000);
+		node.writeBytes(buffer, 1);
+
+		node2 = new CentroidTreeNode(50);
+		node2.setFromBytes(buffer, 1);
+		assertEquals("2141", node2.toString());
+		assertEquals(3, node2.getSubtreeSize());
+		assertEquals(32, node2.getStringBitLength());
 		assertEquals(true, node2.isValueEnd());
 	}
 

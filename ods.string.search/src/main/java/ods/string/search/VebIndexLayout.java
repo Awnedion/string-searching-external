@@ -3,6 +3,10 @@ package ods.string.search;
 
 public class VebIndexLayout implements BstTreeIndexLayout
 {
+	/**
+	 * Not thread safe.
+	 */
+	private long[] indices = new long[6];
 
 	@Override
 	public long getLeftChildIndex(long nodeIndex)
@@ -71,11 +75,14 @@ public class VebIndexLayout implements BstTreeIndexLayout
 				break;
 			}
 		}
+		
+		int shift = 32 >> lastIndex;
 		for (int x = lastIndex; x < indices.length; x++)
 		{
-			long mask = (long) Math.pow(2, Math.pow(2, indices.length - 1 - x));
+			long mask = 1l << shift;
 			indices[x] = lastIndexValue / mask;
 			lastIndexValue %= mask;
+			shift >>= 1;
 		}
 
 		return getIndexFromLayoutIndices(indices);
@@ -84,7 +91,6 @@ public class VebIndexLayout implements BstTreeIndexLayout
 	private long[] getLayoutIndices(long nodeIndex)
 	{
 		long temp = nodeIndex;
-		long[] indices = new long[6];
 		int cur = 0;
 		for (int x = 32; x >= 1; x >>= 1)
 		{

@@ -2,9 +2,24 @@ package ods.string.search;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class CentroidTreeNode implements ExternalMemoryNode
 {
+	public static class StringLengthComparator implements Comparator<CentroidTreeNode>
+	{
+		@Override
+		public int compare(CentroidTreeNode o1, CentroidTreeNode o2)
+		{
+			if (o1.getStringBitLength() < o2.getStringBitLength())
+				return -1;
+			else if (o2.getStringBitLength() < o1.getStringBitLength())
+				return 1;
+			else
+				return 0;
+		}
+	}
+
 	public static void splitOnPrefix(CentroidTreeNode prefixNode, CentroidTreeNode suffixNode)
 	{
 		int matchedBits = getCommonPrefixBits(prefixNode, suffixNode);
@@ -117,8 +132,11 @@ public class CentroidTreeNode implements ExternalMemoryNode
 
 	public void copyString(CentroidTreeNode node)
 	{
+		if (node == this)
+			return;
+
 		bits.clear();
-		bits.put(node.bits);
+		bits.put(node.bits.array(), 0, (int) Math.ceil(node.bitsUsed / 8.));
 		bitsUsed = node.bitsUsed;
 	}
 
@@ -133,8 +151,38 @@ public class CentroidTreeNode implements ExternalMemoryNode
 			String partialByte = Integer.toHexString(bits.get(length) & mask);
 			if (partialByte.length() == 1)
 				partialByte += "0";
-			result += "~" + partialByte;
+			result += "~" + partialByte + "-" + mod;
 		}
+		return result;
+	}
+
+	/**
+	 * Equality is based on all fields except valueEnd.<br>
+	 * 
+	 * {@inheritDoc}
+	 */
+	public boolean equals(Object o)
+	{
+		if (o == this)
+			return true;
+		if (!(o instanceof CentroidTreeNode))
+			return false;
+		CentroidTreeNode node = (CentroidTreeNode) o;
+		if (bitsUsed == node.bitsUsed && subtreeSize == node.subtreeSize
+				&& getCommonPrefixBits(this, node) == bitsUsed)
+			return true;
+		return false;
+	}
+
+	public int hashCode()
+	{
+		int result = (int) (31 * subtreeSize);
+		for (int x = 0; x < bitsUsed / 8; x++)
+		{
+			result *= 31 * bits.get(x);
+		}
+		short mask = (short) (255 << (8 - (bitsUsed % 8)));
+		result += 31 * (bits.get(bitsUsed / 8) & mask);
 		return result;
 	}
 
