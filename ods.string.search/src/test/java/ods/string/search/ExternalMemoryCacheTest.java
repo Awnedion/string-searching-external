@@ -44,10 +44,23 @@ public class ExternalMemoryCacheTest
 	}
 
 	@Test
-	public void testRandomWriteRead()
+	public void testRandomWriteReadCompressed()
 	{
 		ExternalMemoryCache<StringNode> cache = new ExternalMemoryCache<StringNode>(new File(
-				"target/blocks"), 10000000l);
+				"target/blocks"), 10000000l, 1000000, true);
+		accessRandomly(cache);
+	}
+
+	@Test
+	public void testRandomWriteReadNonCompress()
+	{
+		ExternalMemoryCache<StringNode> cache = new ExternalMemoryCache<StringNode>(new File(
+				"target/blocks"), 10000000l, 1000000, false);
+		accessRandomly(cache);
+	}
+
+	private void accessRandomly(ExternalMemoryCache<StringNode> cache)
+	{
 		StringNode node = new StringNode(100);
 		Random rand = new Random();
 		HashSet<Integer> inserts = new HashSet<Integer>();

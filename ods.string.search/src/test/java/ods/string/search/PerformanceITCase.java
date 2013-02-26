@@ -18,18 +18,26 @@ public class PerformanceITCase
 	}
 
 	@Test
-	public void testRandomAddCentroidBasicIndex()
+	public void testRandomAddCentroidBasicIndexCompressed()
 	{
 		CentroidTree tree = new CentroidTree(new File("target/centroidTree"), 1000000000l, 11,
-				new BasicIndexLayout());
-		fillTreeRandomly(tree, 20000);
+				new BasicIndexLayout(), true);
+		fillTreeRandomly(tree, 600000);
+	}
+
+	@Test
+	public void testRandomAddCentroidBasicIndexUncompressed()
+	{
+		CentroidTree tree = new CentroidTree(new File("target/centroidTree"), 1000000000l, 11,
+				new BasicIndexLayout(), false);
+		fillTreeRandomly(tree, 600000);
 	}
 
 	@Test
 	public void testSequentialAddCentroidBasicIndex()
 	{
 		CentroidTree tree = new CentroidTree(new File("target/centroidTree"), 1000000000l, 11,
-				new BasicIndexLayout());
+				new BasicIndexLayout(), true);
 		fillTreeSequentially(tree, 20000);
 	}
 
@@ -37,15 +45,15 @@ public class PerformanceITCase
 	public void testRandomAddCentroidVebIndex()
 	{
 		CentroidTree tree = new CentroidTree(new File("target/centroidTree"), 1000000000l, 11,
-				new VebIndexLayout());
-		fillTreeRandomly(tree, 20000);
+				new VebIndexLayout(), true);
+		fillTreeRandomly(tree, 600000);
 	}
 
 	@Test
 	public void testSequentialAddCentroidVebIndex()
 	{
 		CentroidTree tree = new CentroidTree(new File("target/centroidTree"), 1000000000l, 11,
-				new VebIndexLayout());
+				new VebIndexLayout(), true);
 		fillTreeSequentially(tree, 20000);
 	}
 
@@ -111,7 +119,7 @@ public class PerformanceITCase
 	public void testAddTreeSet()
 	{
 		TreeSet<String> tree = new TreeSet<String>();
-		long timeLimit = 20000;
+		long timeLimit = 120000;
 		Random rand = new Random(1);
 
 		long startTime = System.currentTimeMillis();

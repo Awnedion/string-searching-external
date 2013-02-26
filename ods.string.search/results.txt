@@ -1,0 +1,20 @@
+testRandomAddCentroidBasicIndex No compression, 1MB blocks
+1119078 insert operations, 630802 size tree, created in 600000ms
+8907144 find operations, performed in 600000ms
+
+testRandomAddCentroidBasicIndex Compression, 10kB blocks
+2884914 insert operations, 1504748 size tree, created in 600000ms
+54850376 find operations, performed in 600000ms
+
+testRandomAddCentroidBasicIndex Compression, 10kB blocks, after block sub-dirs added
+2752451 insert operations, 1441572 size tree, created in 600000ms
+62814150 find operations, performed in 600000ms
+
+testRandomAddCentroidBasicIndex No Compression, 10kB blocks
+2874402 insert operations, 1499802 size tree, created in 600000ms
+53386688 find operations, performed in 600000ms
+
+
+testRandomAddCentroidVebIndex No compression, 1MB blocks
+21932 insert operations, 16254 size tree, created in 600000ms
+776361 find operations, performed in 600000ms

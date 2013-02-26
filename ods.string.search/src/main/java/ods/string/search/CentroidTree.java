@@ -22,16 +22,16 @@ public class CentroidTree
 	public CentroidTree(File treeDirectory)
 	{
 		this.treeDirectory = treeDirectory;
-		array = new ExternalMemoryCache<CentroidTreeNode>(treeDirectory, 200000000);
+		array = new ExternalMemoryCache<CentroidTreeNode>(treeDirectory, 200000000, 10000, true);
 	}
 
 	public CentroidTree(File treeDirectory, long cacheSize, int maxStringSize,
-			BstTreeIndexLayout indexLayout)
+			BstTreeIndexLayout indexLayout, boolean compress)
 	{
 		this.indexLayout = indexLayout;
 		this.treeDirectory = treeDirectory;
 		this.cacheSize = cacheSize;
-		array = new ExternalMemoryCache<CentroidTreeNode>(treeDirectory, cacheSize);
+		array = new ExternalMemoryCache<CentroidTreeNode>(treeDirectory, cacheSize, 10000, compress);
 		maxStringLength = maxStringSize;
 		emptyNode = new CentroidTreeNode(maxStringLength);
 	}

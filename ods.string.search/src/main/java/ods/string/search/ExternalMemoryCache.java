@@ -4,11 +4,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 public class ExternalMemoryCache<T extends ExternalMemoryNode>
 {
@@ -25,26 +29,28 @@ public class ExternalMemoryCache<T extends ExternalMemoryNode>
 
 	private long cacheSize = 20000000l;
 	private int blockSize = 1000000;
+	private boolean compress;
 	private File storageDirectory;
 	private LinkedHashMap<Long, Block> cachedBlocks = new LinkedHashMap<Long, Block>(16, 0.75f,
 			true);
 
 	public ExternalMemoryCache(File directory, long cacheSize)
 	{
-		init(directory, cacheSize, 1000000);
+		init(directory, cacheSize, 100000, true);
 	}
 
-	public ExternalMemoryCache(File directory, long cacheSize, int blockSize)
+	public ExternalMemoryCache(File directory, long cacheSize, int blockSize, boolean compress)
 	{
-		init(directory, cacheSize, blockSize);
+		init(directory, cacheSize, blockSize, compress);
 	}
 
-	private void init(File directory, long cacheSize, int blockSize)
+	private void init(File directory, long cacheSize, int blockSize, boolean compress)
 	{
 		storageDirectory = directory;
 		storageDirectory.mkdirs();
 		this.cacheSize = cacheSize;
 		this.blockSize = blockSize;
+		this.compress = compress;
 	}
 
 	public void set(long index, T data)
@@ -80,11 +86,19 @@ public class ExternalMemoryCache<T extends ExternalMemoryNode>
 			if (blockBytes == null)
 			{
 				blockBytes = new Block(ByteBuffer.allocate(blockSize));
-				File blockFile = new File(storageDirectory, block + "");
+				File blockFile = new File(storageDirectory, (block >> 15) + "/" + block + "");
 				if (blockFile.exists())
 				{
-					FileInputStream is = new FileInputStream(blockFile);
-					is.read(blockBytes.data.array());
+					InputStream is = new FileInputStream(blockFile);
+					if (compress)
+						is = new GZIPInputStream(is);
+					int bytesRemaining = blockSize;
+					while (bytesRemaining > 0)
+					{
+						int bytesRead = is.read(blockBytes.data.array(),
+								blockSize - bytesRemaining, bytesRemaining);
+						bytesRemaining -= bytesRead;
+					}
 					is.close();
 				}
 				cachedBlocks.put(block, blockBytes);
@@ -110,7 +124,11 @@ public class ExternalMemoryCache<T extends ExternalMemoryNode>
 		{
 			try
 			{
-				FileOutputStream os = new FileOutputStream(new File(storageDirectory, block + ""));
+				File blockDir = new File(storageDirectory, (block >> 15) + "");
+				blockDir.mkdirs();
+				OutputStream os = new FileOutputStream(new File(blockDir, block + ""));
+				if (compress)
+					os = new GZIPOutputStream(os);
 				os.write(flushBlock.data.array());
 				os.close();
 			} catch (IOException e)
