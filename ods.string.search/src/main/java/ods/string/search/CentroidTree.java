@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
-public class CentroidTree
+public class CentroidTree implements PrefixSearchableSet<String>
 {
 	private int maxStringLength = 100;
 
@@ -36,7 +36,7 @@ public class CentroidTree
 		emptyNode = new CentroidTreeNode(maxStringLength);
 	}
 
-	public boolean insert(String value)
+	public boolean add(String value)
 	{
 		CentroidTreeNode node = new CentroidTreeNode(maxStringLength);
 		node.setString(value);

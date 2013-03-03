@@ -10,18 +10,19 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CentroidTreeTest
+public class ExternalMemoryTreapTest
 {
 	@Before
 	public void setup()
 	{
-		Assert.assertTrue(Utils.deleteRecursively(new File("target/centroidTree")));
+		Assert.assertTrue(Utils.deleteRecursively(new File("target/treap")));
 	}
 
 	@Test
 	public void testAdd()
 	{
-		CentroidTree tree = new CentroidTree(new File("target/centroidTree"));
+		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
+				new File("target/treap"), 500, 7);
 		TreeSet<String> set = new TreeSet<String>();
 		Random rand = new Random();
 

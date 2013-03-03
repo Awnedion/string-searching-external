@@ -18,3 +18,16 @@ testRandomAddCentroidBasicIndex No Compression, 10kB blocks
 testRandomAddCentroidVebIndex No compression, 1MB blocks
 21932 insert operations, 16254 size tree, created in 600000ms
 776361 find operations, performed in 600000ms
+
+
+testRandomAddMemoryTreap Plain In-Memory treap, No mem limit
+60387550 insert operations, 23560681 size tree, created in 600000ms
+7164285 find operations, performed in 600000ms
+
+testRandomAddExternalTreap, 2GB cache limit
+29852544 insert operations, 15630680 size tree, created in 600000ms
+1426614 find operations, performed in 600000ms
+
+testRandomAddExternalTreap, 1GB cache limit
+13182142 insert operations, 7302370 size tree, created in 600000ms
+186329 find operations, performed in 600000ms
