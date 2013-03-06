@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.partition;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,8 +12,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+
+import org.xerial.snappy.SnappyInputStream;
+import org.xerial.snappy.SnappyOutputStream;
 
 public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 {
@@ -42,9 +43,9 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	private LinkedHashMap<String, Block> cachedBlocks = new LinkedHashMap<String, Block>(16, 0.75f,
 			true);
 
-	public ExternalMemoryObjectCache(File directory, long maxCacheMemorySize)
+	public ExternalMemoryObjectCache(File directory)
 	{
-		init(directory, maxCacheMemorySize, true);
+		init(directory, 1000000000, true);
 	}
 
 	public ExternalMemoryObjectCache(File directory, long cacheSize, boolean compress)
@@ -74,6 +75,13 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		return block.data;
 	}
 
+	public void unregister(String index)
+	{
+		Block block = cachedBlocks.remove(index);
+		inMemoryByteEstimate -= block.previousByteSize;
+		new File(storageDirectory, index).delete();
+	}
+
 	@SuppressWarnings("unchecked")
 	private Block getBlock(String blockId)
 	{
@@ -88,7 +96,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				{
 					InputStream is = new FileInputStream(blockFile);
 					if (compress)
-						is = new GZIPInputStream(is);
+						is = new SnappyInputStream(is);
 					ObjectInputStream objStream = new ObjectInputStream(is);
 					block.data = (T) objStream.readObject();
 					objStream.close();
@@ -120,7 +128,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 			{
 				OutputStream os = new FileOutputStream(new File(storageDirectory, block));
 				if (compress)
-					os = new GZIPOutputStream(os);
+					os = new SnappyOutputStream(os);
 				ObjectOutputStream out = new ObjectOutputStream(os);
 				out.writeObject(flushBlock.data);
 				out.close();

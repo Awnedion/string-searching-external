@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.array;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,8 +11,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+
+import org.xerial.snappy.SnappyInputStream;
+import org.xerial.snappy.SnappyOutputStream;
 
 public class ExternalMemoryCache<T extends ExternalMemoryNode>
 {
@@ -91,7 +92,7 @@ public class ExternalMemoryCache<T extends ExternalMemoryNode>
 				{
 					InputStream is = new FileInputStream(blockFile);
 					if (compress)
-						is = new GZIPInputStream(is);
+						is = new SnappyInputStream(is);
 					int bytesRemaining = blockSize;
 					while (bytesRemaining > 0)
 					{
@@ -128,7 +129,7 @@ public class ExternalMemoryCache<T extends ExternalMemoryNode>
 				blockDir.mkdirs();
 				OutputStream os = new FileOutputStream(new File(blockDir, block + ""));
 				if (compress)
-					os = new GZIPOutputStream(os);
+					os = new SnappyOutputStream(os);
 				os.write(flushBlock.data.array());
 				os.close();
 			} catch (IOException e)

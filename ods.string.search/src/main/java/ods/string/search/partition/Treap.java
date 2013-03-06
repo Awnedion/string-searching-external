@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.partition;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -6,6 +6,8 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
+
+import ods.string.search.PrefixSearchableSet;
 
 public class Treap<T extends Comparable<T> & Serializable> implements ExternalizableMemoryObject,
 		PrefixSearchableSet<T>
@@ -545,47 +547,54 @@ public class Treap<T extends Comparable<T> & Serializable> implements Externaliz
 		return null;
 	}
 
-	public Iterator<T> iterator(Node<T> u)
+	protected class BTI implements Iterator<T>
 	{
-		class BTI implements Iterator<T>
+		protected Node<T> w, prev;
+		protected T endValue;
+
+		public BTI(Node<T> iw, T endValue)
 		{
-			protected Node<T> w, prev;
-
-			public BTI(Node<T> iw)
-			{
-				w = iw;
-			}
-
-			public boolean hasNext()
-			{
-				return w != nil;
-			}
-
-			public T next()
-			{
-				T x = w.x;
-				prev = w;
-				w = nextNode(w);
-				return x;
-			}
-
-			public void remove()
-			{
-				// FIXME: This is a bug. remove() methods have to be changed
-				Treap.this.remove(prev.x);
-			}
+			w = iw;
+			this.endValue = endValue;
 		}
-		return new BTI(u);
+
+		public boolean hasNext()
+		{
+			return w != nil && !w.x.equals(endValue);
+		}
+
+		public T next()
+		{
+			T x = w.x;
+			prev = w;
+			w = nextNode(w);
+			return x;
+		}
+
+		public void remove()
+		{
+			Treap.this.remove(prev.x);
+		}
+	}
+
+	public Iterator<T> iterator(Node<T> u, T endValue)
+	{
+		return new BTI(u, endValue);
 	}
 
 	public Iterator<T> iterator()
 	{
-		return iterator(firstNode());
+		return iterator(firstNode(), null);
 	}
 
 	public Iterator<T> iterator(T x)
 	{
-		return iterator(findGENode(x));
+		return iterator(findGENode(x), null);
+	}
+
+	public Iterator<T> iterator(T startValue, T endValue)
+	{
+		return iterator(findGENode(startValue), endValue);
 	}
 
 	/**

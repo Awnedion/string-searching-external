@@ -1,9 +1,11 @@
-package ods.string.search;
+package ods.string.search.array;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
+
+import ods.string.search.array.CentroidTreeNode;
 
 import org.junit.Test;
 

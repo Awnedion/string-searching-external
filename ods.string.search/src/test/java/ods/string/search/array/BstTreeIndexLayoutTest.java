@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.array;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -6,6 +6,10 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Stack;
+
+import ods.string.search.array.BasicIndexLayout;
+import ods.string.search.array.BstTreeIndexLayout;
+import ods.string.search.array.VebIndexLayout;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.array;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

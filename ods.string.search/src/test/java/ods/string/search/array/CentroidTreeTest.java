@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.array;
 
 import static org.junit.Assert.assertEquals;
 
@@ -6,23 +6,25 @@ import java.io.File;
 import java.util.Random;
 import java.util.TreeSet;
 
+import ods.string.search.Utils;
+import ods.string.search.array.CentroidTree;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ExternalMemoryTreapTest
+public class CentroidTreeTest
 {
 	@Before
 	public void setup()
 	{
-		Assert.assertTrue(Utils.deleteRecursively(new File("target/treap")));
+		Assert.assertTrue(Utils.deleteRecursively(new File("target/centroidTree")));
 	}
 
 	@Test
 	public void testAdd()
 	{
-		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
-				new File("target/treap"), 500, 7);
+		CentroidTree tree = new CentroidTree(new File("target/centroidTree"));
 		TreeSet<String> set = new TreeSet<String>();
 		Random rand = new Random();
 

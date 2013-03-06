@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.partition;
 
 import java.io.Serializable;
 

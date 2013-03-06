@@ -1,10 +1,14 @@
-package ods.string.search;
+package ods.string.search.array;
 
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.util.HashSet;
 import java.util.Random;
+
+import ods.string.search.Utils;
+import ods.string.search.array.ExternalMemoryCache;
+import ods.string.search.array.StringNode;
 
 import org.junit.Assert;
 import org.junit.Before;

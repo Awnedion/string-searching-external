@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.partition;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -10,7 +10,6 @@ import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
-
 
 public class TreapTest
 {
@@ -204,5 +203,40 @@ public class TreapTest
 		assertNull(treap.get(100));
 		assertNull(treap.get(1003));
 		assertNull(treap.get(-1127));
+	}
+
+	@Test
+	public void testIteratorRange()
+	{
+		Iterator<Double> iter = treap.iterator(20., 35.);
+		double expectedValue = 20;
+		while (iter.hasNext())
+		{
+			assertEquals(new Double(expectedValue++), iter.next());
+			iter.remove();
+		}
+
+		for (int x = 0; x < 20; x++)
+			assertEquals(true, treap.contains(new Double(x)));
+
+		for (int x = 20; x < 35; x++)
+			assertEquals(false, treap.contains(new Double(x)));
+
+		for (int x = 35; x < 100; x++)
+			assertEquals(true, treap.contains(new Double(x)));
+	}
+
+	@Test
+	public void testIteratorAll()
+	{
+		Iterator<Double> iter = treap.iterator();
+		double expectedValue = 0;
+		while (iter.hasNext())
+		{
+			assertEquals(new Double(expectedValue++), iter.next());
+			if (Math.random() > 0.5)
+				iter.remove();
+		}
+		assertEquals(100., expectedValue, 0.0001);
 	}
 }

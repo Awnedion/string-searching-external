@@ -1,7 +1,9 @@
 package ods.string.search;
 
+import java.util.Iterator;
 
-public interface PrefixSearchableSet<T>
+
+public interface PrefixSearchableSet<T> extends Iterable<T>
 {
 	boolean add(T u);
 
@@ -10,4 +12,6 @@ public interface PrefixSearchableSet<T>
 	boolean contains(T x);
 
 	long size();
+
+	Iterator<T> iterator(T from, T to);
 }

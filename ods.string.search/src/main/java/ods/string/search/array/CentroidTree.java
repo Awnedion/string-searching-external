@@ -1,4 +1,4 @@
-package ods.string.search;
+package ods.string.search.array;
 
 import java.io.File;
 import java.util.ArrayDeque;
@@ -7,6 +7,9 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.PriorityQueue;
+
+import ods.string.search.PrefixSearchableSet;
+import ods.string.search.Utils;
 
 public class CentroidTree implements PrefixSearchableSet<String>
 {
@@ -533,5 +536,19 @@ public class CentroidTree implements PrefixSearchableSet<String>
 			}
 		}
 		return result;
+	}
+
+	@Override
+	public Iterator<String> iterator()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Iterator<String> iterator(String from, String to)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

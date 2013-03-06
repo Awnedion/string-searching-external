@@ -1,8 +1,11 @@
-package ods.string.search;
+package ods.string.search.partition;
 
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+
+import ods.string.search.Utils;
+import ods.string.search.partition.ExternalMemoryObjectCache;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,7 +24,7 @@ public class ExternalMemoryObjectCacheTest
 	public void testStorage()
 	{
 		ExternalMemoryObjectCache<CoolString> cache = new ExternalMemoryObjectCache<CoolString>(
-				new File("target/blocks"), 10);
+				new File("target/blocks"), 10, true);
 		for (int x = 0; x < 100; x++)
 			cache.register(x + "", new CoolString(x + ""));
 

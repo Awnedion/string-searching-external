@@ -4,6 +4,12 @@ import java.io.File;
 import java.util.Random;
 import java.util.TreeSet;
 
+import ods.string.search.array.BasicIndexLayout;
+import ods.string.search.array.CentroidTree;
+import ods.string.search.array.VebIndexLayout;
+import ods.string.search.partition.ExternalMemoryTreap;
+import ods.string.search.partition.Treap;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,11 +74,26 @@ public class PerformanceITCase
 	}
 
 	@Test
+	public void testSequentialAddMemoryTreap()
+	{
+		Treap<String> tree = new Treap<String>();
+		fillTreeSequentially(tree, 600000);
+	}
+
+	@Test
 	public void testRandomAddExternalTreap()
 	{
 		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
 				new File("target/treap"), 100000, 1000000000l);
 		fillTreeRandomly(tree, 600000);
+	}
+
+	@Test
+	public void testSequentialAddExternalTreap()
+	{
+		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
+				new File("target/treap"), 100000, 1000000000l);
+		fillTreeSequentially(tree, 600000);
 	}
 
 	private void fillTreeRandomly(PrefixSearchableSet<String> tree, long timeLimit)
@@ -83,10 +104,7 @@ public class PerformanceITCase
 		int count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			int inputLength = rand.nextInt(MAX_STRING_LENGTH) + 1;
-			String input = "";
-			for (int y = 0; y < inputLength; y++)
-				input += (char) (rand.nextInt(10) + '0');
+			String input = generateRandomString(rand);
 			tree.add(input);
 			count++;
 		}
@@ -97,10 +115,7 @@ public class PerformanceITCase
 		count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			int inputLength = rand.nextInt(10) + 1;
-			String input = "";
-			for (int y = 0; y < inputLength; y++)
-				input += (char) (rand.nextInt(10) + '0');
+			String input = generateRandomString(rand);
 			tree.contains(input);
 			count++;
 		}
@@ -109,13 +124,23 @@ public class PerformanceITCase
 		System.out.println(Runtime.getRuntime().totalMemory());
 	}
 
+	private String generateRandomString(Random rand)
+	{
+		int inputLength = rand.nextInt(MAX_STRING_LENGTH) + 1;
+		StringBuilder input = new StringBuilder(inputLength);
+		for (int y = 0; y < inputLength; y++)
+			input.append((char) (rand.nextInt(10) + '0'));
+		return input.toString();
+	}
+
 	private void fillTreeSequentially(PrefixSearchableSet<String> tree, long timeLimit)
 	{
 		long startTime = System.currentTimeMillis();
 		int count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			tree.add(String.valueOf(count));
+			String val = convertToFixedLengthString(count);
+			tree.add(val);
 			count++;
 		}
 		System.out.println(count + " insert operations, " + tree.size() + " size tree, created in "
@@ -125,12 +150,22 @@ public class PerformanceITCase
 		count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			tree.contains(String.valueOf(count));
+			tree.contains(convertToFixedLengthString(count));
 			count++;
 		}
 		System.out.println(count + " find operations, performed in " + timeLimit + "ms");
 
 		System.out.println(Runtime.getRuntime().totalMemory());
+	}
+
+	private String convertToFixedLengthString(int value)
+	{
+		StringBuilder result = new StringBuilder(MAX_STRING_LENGTH);
+		String s = String.valueOf(value);
+		for (int x = 0; x < MAX_STRING_LENGTH - s.length(); x++)
+			result.append("0");
+		result.append(s);
+		return result.toString();
 	}
 
 	@Test
