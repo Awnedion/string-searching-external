@@ -560,7 +560,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Externaliz
 
 		public boolean hasNext()
 		{
-			return w != nil && !w.x.equals(endValue);
+			return w != nil && (endValue == nil || c.compare(w.x, endValue) < 0);
 		}
 
 		public T next()
@@ -594,7 +594,10 @@ public class Treap<T extends Comparable<T> & Serializable> implements Externaliz
 
 	public Iterator<T> iterator(T startValue, T endValue)
 	{
-		return iterator(findGENode(startValue), endValue);
+		if (endValue == null || c.compare(startValue, endValue) < 0)
+			return iterator(findGENode(startValue), endValue);
+		else
+			return iterator(findGENode(endValue), startValue);
 	}
 
 	/**

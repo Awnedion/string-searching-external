@@ -1,6 +1,7 @@
 package ods.string.search;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.TreeSet;
 
@@ -84,7 +85,7 @@ public class PerformanceITCase
 	public void testRandomAddExternalTreap()
 	{
 		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
-				new File("target/treap"), 100000, 1000000000l);
+				new File("target/treap"), 10000, 1000000000l);
 		fillTreeRandomly(tree, 600000);
 	}
 
@@ -104,7 +105,7 @@ public class PerformanceITCase
 		int count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			String input = generateRandomString(rand);
+			String input = generateRandomString(rand, 1);
 			tree.add(input);
 			count++;
 		}
@@ -115,18 +116,36 @@ public class PerformanceITCase
 		count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			String input = generateRandomString(rand);
+			String input = generateRandomString(rand, 1);
 			tree.contains(input);
 			count++;
 		}
 		System.out.println(count + " find operations, performed in " + timeLimit + "ms");
 
+		startTime = System.currentTimeMillis();
+		count = 0;
+		long iterationCount = 0;
+		while (System.currentTimeMillis() - startTime < timeLimit)
+		{
+			String input = generateRandomString(rand, 6);
+			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
+					+ (char) (input.charAt(input.length() - 1) + 1));
+			while (iter.hasNext())
+			{
+				iter.next();
+				iterationCount++;
+			}
+			count++;
+		}
+		System.out.println(count + " prefix search operations, " + iterationCount
+				+ " elements returned, performed in " + timeLimit + "ms");
+
 		System.out.println(Runtime.getRuntime().totalMemory());
 	}
 
-	private String generateRandomString(Random rand)
+	private String generateRandomString(Random rand, int minLength)
 	{
-		int inputLength = rand.nextInt(MAX_STRING_LENGTH) + 1;
+		int inputLength = rand.nextInt(MAX_STRING_LENGTH - minLength + 1) + minLength;
 		StringBuilder input = new StringBuilder(inputLength);
 		for (int y = 0; y < inputLength; y++)
 			input.append((char) (rand.nextInt(10) + '0'));

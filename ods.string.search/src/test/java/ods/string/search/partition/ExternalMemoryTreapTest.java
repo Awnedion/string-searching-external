@@ -114,6 +114,21 @@ public class ExternalMemoryTreapTest
 			assertEquals(count, iter.next().intValue());
 			count++;
 		}
+		
+		Iterator<Integer> iter = tree.iterator(200, 700);
+		assertEquals(false, iter.hasNext());
+
+		iter = tree.iterator(199, 700);
+		while (iter.hasNext())
+			iter.next();
+		
+		iter = tree.iterator(197, 197);
+		assertEquals(false, iter.hasNext());
+
+		iter = tree.iterator(198, 197);
+		assertEquals(true, iter.hasNext());
+		assertEquals(197, iter.next().intValue());
+		assertEquals(false, iter.hasNext());
 	}
 
 	@Test

@@ -47,7 +47,9 @@ public class ExternalMemoryTreap<T extends Comparable<T> & Serializable> impleme
 			T midValue = locateMiddleValue(curTreap);
 			partitionRanges.put(midValue, uniqueId + "");
 			Treap<T> newTreap = curTreap.split(midValue);
-			System.out.println("Treap Split Performed: " + curTreap.size() + " " + newTreap.size());
+			if (maxTreapSize > 1000)
+				System.out.println("Treap Split Performed: " + curTreap.size() + " "
+						+ newTreap.size());
 			treapCache.register(uniqueId + "", newTreap);
 			uniqueId++;
 		}
@@ -229,7 +231,7 @@ public class ExternalMemoryTreap<T extends Comparable<T> & Serializable> impleme
 		@Override
 		public boolean hasNext()
 		{
-			return currentTreap != endTreap || currentTreapIter.hasNext();
+			return currentTreapIter.hasNext();
 		}
 
 		@Override
@@ -241,7 +243,13 @@ public class ExternalMemoryTreap<T extends Comparable<T> & Serializable> impleme
 			if (!currentTreapIter.hasNext() && currentTreap != endTreap)
 			{
 				Entry<T, String> nextPartition = partitionRanges.higherEntry(currentPartitionKey);
-				currentPartitionKey = nextPartition.getKey();
+				try
+				{
+					currentPartitionKey = nextPartition.getKey();
+				} catch (NullPointerException e)
+				{
+					e.printStackTrace();
+				}
 				currentTreap = treapCache.get(nextPartition.getValue());
 				currentTreapIter = (Treap<T>.BTI) currentTreap.iterator(from, to);
 				treapCache.get(endTreapKey);
@@ -267,6 +275,9 @@ public class ExternalMemoryTreap<T extends Comparable<T> & Serializable> impleme
 	@Override
 	public Iterator<T> iterator(T from, T to)
 	{
-		return new EMTreapIterator(from, to);
+		if (to == null || from.compareTo(to) < 0)
+			return new EMTreapIterator(from, to);
+		else
+			return new EMTreapIterator(to, from);
 	}
 }

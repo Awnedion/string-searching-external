@@ -32,9 +32,25 @@ testRandomAddExternalTreap, 1GB cache limit, GZIP compression
 13182142 insert operations, 7302370 size tree, created in 600000ms
 186329 find operations, performed in 600000ms
 
-testRandomAddExternalTreap, 1GB cache limit, Snappy compression
-13314192 insert operations, 7370744 size tree, created in 600000ms
-304371 find operations, performed in 600000ms
+testRandomAddExternalTreap, 1GB cache limit, Snappy compression, 100000 max treap size
+13314330 insert operations, 7370820 size tree, created in 600000ms
+308434 find operations, performed in 600000ms
+282028 prefix search operations, 321390 elements returned, performed in 600000ms
+
+testRandomAddExternalTreap, 1GB cache limit, Snappy compression, 10000 max treap size
+13977909 insert operations, 7713793 size tree, created in 600000ms
+885111 find operations, performed in 600000ms
+764417 prefix search operations, 912082 elements returned, performed in 600000ms
+
+testRandomAddExternalTreap, 1GB cache limit, Snappy compression, 1000 max treap size
+15921536 insert operations, 8711241 size tree, created in 600000ms
+3805272 find operations, performed in 600000ms
+2988411 prefix search operations, 4033453 elements returned, performed in 600000ms
+
+testRandomAddExternalTreap, 1GB cache limit, Snappy compression, 100 max treap size
+16597799 insert operations, 9055718 size tree, created in 600000ms
+5722365 find operations, performed in 600000ms
+5337740 prefix search operations, 7479973 elements returned, performed in 600000ms
 
 testSequentialAddExternalTreap, 1GB cache limit
 116949574 insert operations, 116949574 size tree, created in 600000ms
