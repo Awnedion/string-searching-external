@@ -42,6 +42,11 @@ testRandomAddExternalTreap, 1GB cache limit, Snappy compression, 10000 max treap
 885111 find operations, performed in 600000ms
 764417 prefix search operations, 912082 elements returned, performed in 600000ms
 
+testRandomAddExternalTreeSet, 1GB cache limit, Snappy compression, 10000 max set size
+13549721 insert operations, 7492131 size tree, created in 600000ms
+1187048 find operations, performed in 600000ms
+999141 prefix search operations, 1158365 elements returned, performed in 600000ms
+
 testRandomAddExternalTreap, 1GB cache limit, Snappy compression, 1000 max treap size
 15921536 insert operations, 8711241 size tree, created in 600000ms
 3805272 find operations, performed in 600000ms

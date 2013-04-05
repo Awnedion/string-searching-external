@@ -14,7 +14,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ExternalMemoryTreapTest
+public class ExternalMemorySplittableSetTest
 {
 	@Before
 	public void setup()
@@ -25,8 +25,21 @@ public class ExternalMemoryTreapTest
 	@Test
 	public void testAddSearchRemove()
 	{
-		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
-				new File("target/treap"), 500, 300000);
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 500, 300000, Treap.class);
+		testOperations(tree);
+	}
+
+	@Test
+	public void testAddSearchRemoveTreeSet()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 500, 300000, SplittableTreeSetAdapter.class);
+		testOperations(tree);
+	}
+
+	private void testOperations(ExternalMemorySplittableSet<String> tree)
+	{
 		TreeSet<String> set = new TreeSet<String>();
 		Random rand = new Random();
 
@@ -69,8 +82,8 @@ public class ExternalMemoryTreapTest
 	@Test
 	public void testIteratorAll()
 	{
-		ExternalMemoryTreap<Integer> tree = new ExternalMemoryTreap<Integer>(new File(
-				"target/treap"), 50, 30000000);
+		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(new File(
+				"target/treap"), 50, 30000000, Treap.class);
 
 		for (int x = 0; x < 200; x++)
 		{
@@ -98,9 +111,23 @@ public class ExternalMemoryTreapTest
 	@Test
 	public void testIteratorRange()
 	{
-		ExternalMemoryTreap<Integer> tree = new ExternalMemoryTreap<Integer>(new File(
-				"target/treap"), 50, 30000000);
+		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(new File(
+				"target/treap"), 50, 30000000, Treap.class);
 
+		testRangeIterators(tree);
+	}
+
+	@Test
+	public void testIteratorRangeTreeSet()
+	{
+		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(new File(
+				"target/treap"), 50, 30000000, SplittableTreeSetAdapter.class);
+
+		testRangeIterators(tree);
+	}
+
+	private void testRangeIterators(ExternalMemorySplittableSet<Integer> tree)
+	{
 		for (int x = 0; x < 200; x++)
 		{
 			tree.add(x);
@@ -114,14 +141,14 @@ public class ExternalMemoryTreapTest
 			assertEquals(count, iter.next().intValue());
 			count++;
 		}
-		
+
 		Iterator<Integer> iter = tree.iterator(200, 700);
 		assertEquals(false, iter.hasNext());
 
 		iter = tree.iterator(199, 700);
 		while (iter.hasNext())
 			iter.next();
-		
+
 		iter = tree.iterator(197, 197);
 		assertEquals(false, iter.hasNext());
 
@@ -134,8 +161,8 @@ public class ExternalMemoryTreapTest
 	@Test
 	public void testIteratorPrefix()
 	{
-		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
-				new File("target/treap"), 50, 30000000);
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 50, 30000000, Treap.class);
 
 		for (int x = 0; x < 200; x++)
 		{

@@ -8,7 +8,8 @@ import java.util.TreeSet;
 import ods.string.search.array.BasicIndexLayout;
 import ods.string.search.array.CentroidTree;
 import ods.string.search.array.VebIndexLayout;
-import ods.string.search.partition.ExternalMemoryTreap;
+import ods.string.search.partition.ExternalMemorySplittableSet;
+import ods.string.search.partition.SplittableTreeSetAdapter;
 import ods.string.search.partition.Treap;
 
 import org.junit.Assert;
@@ -84,16 +85,24 @@ public class PerformanceITCase
 	@Test
 	public void testRandomAddExternalTreap()
 	{
-		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
-				new File("target/treap"), 10000, 1000000000l);
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 10000, 1000000000l, Treap.class);
+		fillTreeRandomly(tree, 600000);
+	}
+
+	@Test
+	public void testRandomAddExternalTreeSet()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 10000, 1000000000l, SplittableTreeSetAdapter.class);
 		fillTreeRandomly(tree, 600000);
 	}
 
 	@Test
 	public void testSequentialAddExternalTreap()
 	{
-		ExternalMemoryTreap<String> tree = new ExternalMemoryTreap<String>(
-				new File("target/treap"), 100000, 1000000000l);
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 100000, 1000000000l, Treap.class);
 		fillTreeSequentially(tree, 600000);
 	}
 

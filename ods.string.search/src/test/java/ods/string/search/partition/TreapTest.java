@@ -78,7 +78,7 @@ public class TreapTest
 
 	private Treap<Double> splitOn(double x)
 	{
-		Treap<Double> treap2 = treap.split(x);
+		SplittableSet<Double> treap2 = treap.split(x);
 		for (Iterator<Double> iter = treap.iterator(); iter.hasNext();)
 		{
 			assertTrue(iter.next() < x);
@@ -90,7 +90,7 @@ public class TreapTest
 		assertEquals(treap.size(), treap.size());
 		assertEquals(treap2.size(), treap2.size());
 
-		return treap2;
+		return (Treap<Double>) treap2;
 	}
 
 	@Test

@@ -7,10 +7,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
 
-import ods.string.search.PrefixSearchableSet;
-
-public class Treap<T extends Comparable<T> & Serializable> implements ExternalizableMemoryObject,
-		PrefixSearchableSet<T>
+public class Treap<T extends Comparable<T> & Serializable> implements SplittableSet<T>
 {
 	private static final int BYTES_PER_NODE = 56;
 
@@ -366,7 +363,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Externaliz
 	 * @param x
 	 * @return a Treap containing all elements greater than x
 	 */
-	public Treap<T> split(T x)
+	public SplittableSet<T> split(T x)
 	{
 		Node<T> treeNode = findLast(x);
 		Treap<T> t = new Treap<T>(c);
@@ -457,8 +454,10 @@ public class Treap<T extends Comparable<T> & Serializable> implements Externaliz
 	 * @param t
 	 * @return true if successful and false if the precondition is not satisfied
 	 */
-	public boolean merge(Treap<T> t)
+	public boolean merge(SplittableSet<T> set)
 	{
+		Treap<T> t = (Treap<T>) set;
+
 		if (t.r == nil)
 		{
 			return true;
@@ -699,5 +698,58 @@ public class Treap<T extends Comparable<T> & Serializable> implements Externaliz
 	public boolean isDirty()
 	{
 		return dirty;
+	}
+
+	public T locateMiddleValue()
+	{
+		Node<T> curNode = r;
+		int idealSize = r.size / 2;
+		int leftSize = 0;
+		int rightSize = 0;
+
+		while (true)
+		{
+			int leftChildSize = 0;
+			int rightChildSize = 0;
+			if (curNode.left != null)
+				leftChildSize = curNode.left.size;
+			if (curNode.right != null)
+				rightChildSize = curNode.right.size;
+
+			if (leftChildSize == 0 && rightChildSize == 0)
+				break;
+			else if (leftChildSize == 0)
+			{
+				curNode = curNode.right;
+				leftSize += 1;
+			} else if (rightChildSize == 0)
+			{
+				curNode = curNode.left;
+				rightSize += 1;
+			} else
+			{
+
+				int newLeftSize = leftChildSize + 1 + leftSize;
+				int newRightSize = rightChildSize + 1 + rightSize;
+				long leftScore = (leftSize > idealSize ? (long) (leftSize - idealSize)
+						* (leftSize - idealSize) : idealSize - leftSize)
+						+ ((newRightSize > idealSize ? (long) (newRightSize - idealSize)
+								* (newRightSize - idealSize) : idealSize - newRightSize));
+				long rightScore = (newLeftSize > idealSize ? (long) (newLeftSize - idealSize)
+						* (newLeftSize - idealSize) : idealSize - newLeftSize)
+						+ ((rightSize > idealSize ? (long) (rightSize - idealSize)
+								* (rightSize - idealSize) : idealSize - rightSize));
+				if (leftScore < rightScore)
+				{
+					curNode = curNode.left;
+					rightSize = newRightSize;
+				} else
+				{
+					curNode = curNode.right;
+					leftSize = newLeftSize;
+				}
+			}
+		}
+		return curNode.x;
 	}
 }
