@@ -83,7 +83,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		u.x = x;
 		u.p = rand.nextInt();
 		if (bytesPerNodeWithData == -1)
-			bytesPerNodeWithData = getObjectBaseSize(x) + BYTES_PER_NODE;
+			bytesPerNodeWithData = getObjectBaseSize(x.getClass()) + BYTES_PER_NODE;
 		return add(u, startingNode);
 	}
 
@@ -686,9 +686,9 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		return (r == null ? 0 : r.size) * bytesPerNodeWithData + (dataBytesEstimate << 1);
 	}
 
-	private int getObjectBaseSize(T obj)
+	public static int getObjectBaseSize(Class<?> obj)
 	{
-		if (obj instanceof String)
+		if (obj.equals(String.class))
 			return 64;
 		else
 			return 24;

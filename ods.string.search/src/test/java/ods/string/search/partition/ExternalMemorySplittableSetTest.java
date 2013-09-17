@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.TreeSet;
 
+import ods.string.search.PrefixSearchableSet;
 import ods.string.search.Utils;
 
 import org.junit.Assert;
@@ -38,10 +39,10 @@ public class ExternalMemorySplittableSetTest
 		testOperations(tree);
 	}
 
-	private void testOperations(ExternalMemorySplittableSet<String> tree)
+	static void testOperations(PrefixSearchableSet<String> tree)
 	{
 		TreeSet<String> set = new TreeSet<String>();
-		Random rand = new Random();
+		Random rand = new Random(1);
 
 		for (int x = 0; x < 10000; x++)
 		{
@@ -82,26 +83,37 @@ public class ExternalMemorySplittableSetTest
 	@Test
 	public void testIteratorAll()
 	{
-		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(new File(
-				"target/treap"), 50, 30000000, Treap.class);
+		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(
+				new File("target/treap"), 50, 30000000, Treap.class);
 
-		for (int x = 0; x < 200; x++)
+		testFullIterator(tree);
+	}
+
+	static void testFullIterator(PrefixSearchableSet<Integer> tree)
+	{
+		for (int x = 1; x < 200; x++)
 		{
 			tree.add(x);
 		}
 
 		Random rand = new Random();
-		int count = 0;
+		int count = 1;
 		int modulus = rand.nextInt(15) + 2;
 		for (Iterator<Integer> iter = tree.iterator(); iter.hasNext();)
 		{
 			assertEquals(count, iter.next().intValue());
-			if (count % modulus == 0)
-				iter.remove();
+			try
+			{
+				if (count % modulus == 0)
+					iter.remove();
+			} catch (UnsupportedOperationException e)
+			{
+				modulus = 1000;
+			}
 			count++;
 		}
 
-		for (int x = 0; x < 200; x++)
+		for (int x = 1; x < 200; x++)
 		{
 			boolean expectedResult = !(x % modulus == 0);
 			assertEquals(expectedResult, tree.contains(x));
@@ -111,8 +123,8 @@ public class ExternalMemorySplittableSetTest
 	@Test
 	public void testIteratorRange()
 	{
-		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(new File(
-				"target/treap"), 50, 30000000, Treap.class);
+		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(
+				new File("target/treap"), 50, 30000000, Treap.class);
 
 		testRangeIterators(tree);
 	}
@@ -120,13 +132,13 @@ public class ExternalMemorySplittableSetTest
 	@Test
 	public void testIteratorRangeTreeSet()
 	{
-		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(new File(
-				"target/treap"), 50, 30000000, SplittableTreeSetAdapter.class);
+		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(
+				new File("target/treap"), 50, 30000000, SplittableTreeSetAdapter.class);
 
 		testRangeIterators(tree);
 	}
 
-	private void testRangeIterators(ExternalMemorySplittableSet<Integer> tree)
+	static void testRangeIterators(PrefixSearchableSet<Integer> tree)
 	{
 		for (int x = 0; x < 200; x++)
 		{
@@ -164,6 +176,11 @@ public class ExternalMemorySplittableSetTest
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
 				new File("target/treap"), 50, 30000000, Treap.class);
 
+		testPrefixIterators(tree);
+	}
+
+	static void testPrefixIterators(PrefixSearchableSet<String> tree)
+	{
 		for (int x = 0; x < 200; x++)
 		{
 			tree.add(x + "");
