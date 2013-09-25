@@ -18,14 +18,25 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	private ExternalMemoryObjectCache<ExternalizableLinkedList<T>> listCache;
 	private int maxHeight;
 	private int size;
-	private Random rand = new Random(1);
+	private Random rand = new Random();
 
 	public ExternalMemorySkipList(File storageDirectory)
 	{
-		promotionProbability = 0.33;
-		listCache = new ExternalMemoryObjectCache<ExternalizableLinkedList<T>>(storageDirectory);
-		maxHeight = 1;
+		promotionProbability = 1. / 35.;
+		init(storageDirectory, 1000000000);
+	}
 
+	public ExternalMemorySkipList(File storageDirectory, double promotionProbability, long cacheSize)
+	{
+		this.promotionProbability = promotionProbability;
+		init(storageDirectory, cacheSize);
+	}
+
+	private void init(File storageDirectory, long cacheSize)
+	{
+		listCache = new ExternalMemoryObjectCache<ExternalizableLinkedList<T>>(storageDirectory,
+				cacheSize, true);
+		maxHeight = 1;
 		listCache.register("-1", new ExternalizableLinkedList<T>());
 	}
 
@@ -56,7 +67,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			{
 				maxHeight++;
 				ExternalizableLinkedList<T> newRoot = new ExternalizableLinkedList<T>();
-				newRoot.add(u);
+				newRoot.add(0, u);
 				listCache.register("-" + maxHeight, newRoot);
 			}
 			return true;

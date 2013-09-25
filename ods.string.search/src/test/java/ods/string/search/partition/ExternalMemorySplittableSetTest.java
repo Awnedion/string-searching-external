@@ -42,7 +42,7 @@ public class ExternalMemorySplittableSetTest
 	static void testOperations(PrefixSearchableSet<String> tree)
 	{
 		TreeSet<String> set = new TreeSet<String>();
-		Random rand = new Random(1);
+		Random rand = new Random();
 
 		for (int x = 0; x < 10000; x++)
 		{

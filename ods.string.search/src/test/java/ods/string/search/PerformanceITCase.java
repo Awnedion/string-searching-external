@@ -8,10 +8,12 @@ import java.util.TreeSet;
 import ods.string.search.array.BasicIndexLayout;
 import ods.string.search.array.CentroidTree;
 import ods.string.search.array.VebIndexLayout;
+import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
 import ods.string.search.partition.SplittableTreeSetAdapter;
 import ods.string.search.partition.Treap;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,10 +24,16 @@ public class PerformanceITCase
 	private static final int MAX_STRING_LENGTH = 12;
 
 	@Before
+	@After
 	public void setup()
 	{
+		File partitionDir = new File("target/treap");
+		if (partitionDir.list() != null)
+		{
+			System.out.println("Deleting " + partitionDir.list().length + " partitions.");
+		}
 		Assert.assertTrue(Utils.deleteRecursively(new File("target/centroidTree")));
-		Assert.assertTrue(Utils.deleteRecursively(new File("target/treap")));
+		Assert.assertTrue(Utils.deleteRecursively(partitionDir));
 	}
 
 	@Test
@@ -86,7 +94,7 @@ public class PerformanceITCase
 	public void testRandomAddExternalTreap()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 10000, 1000000000l, Treap.class);
+				new File("target/treap"), 250, 1000000000l, Treap.class);
 		fillTreeRandomly(tree, 600000);
 	}
 
@@ -94,7 +102,7 @@ public class PerformanceITCase
 	public void testRandomAddExternalTreeSet()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 10000, 1000000000l, SplittableTreeSetAdapter.class);
+				new File("target/treap"), 400, 1000000000l, SplittableTreeSetAdapter.class);
 		fillTreeRandomly(tree, 600000);
 	}
 
@@ -102,7 +110,23 @@ public class PerformanceITCase
 	public void testSequentialAddExternalTreap()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 100000, 1000000000l, Treap.class);
+				new File("target/treap"), 250, 1000000000l, Treap.class);
+		fillTreeSequentially(tree, 600000);
+	}
+
+	@Test
+	public void testRandomAddSkipList()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 35., 1000000000l);
+		fillTreeRandomly(tree, 600000);
+	}
+
+	@Test
+	public void testSequentialAddSkipList()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 35., 1000000000l);
 		fillTreeSequentially(tree, 600000);
 	}
 

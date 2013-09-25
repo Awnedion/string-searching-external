@@ -33,7 +33,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	private Random rand = new Random();
 
-	private transient boolean dirty = false;
+	private transient boolean dirty = true;
 	private long dataBytesEstimate = 0;
 	private int bytesPerNodeWithData = -1;
 

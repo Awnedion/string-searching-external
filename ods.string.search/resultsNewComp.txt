@@ -1,0 +1,24 @@
+///2.1GB Heap limit for all, 1GB cache limit
+
+//testRandomAddExternalTreap, 250 partition size
+17584896 insert operations, 9556288 size tree, created in 600000ms
+8284393 find operations, performed in 600000ms
+6357035 prefix search operations, 9432121 elements returned, performed in 600000ms
+
+//testSequentialAddExternalTreap, 250 partition size
+54592871 insert operations, 54592871 size tree, created in 600000ms
+707691739 find operations, performed in 600000ms
+
+//testRandomAddExternalTreeSet, 400 partition size
+17304564 insert operations, 9414337 size tree, created in 600000ms
+8364267 find operations, performed in 600000ms
+6283169 prefix search operations, 9193492 elements returned, performed in 600000ms
+
+//testRandomAddSkipList, 1/35 promotion prob.
+17469390 insert operations, 9497784 size tree, created in 600000ms
+11643642 find operations, performed in 600000ms
+12325594 prefix search operations, 18197941 elements returned, performed in 600000ms
+
+//testSequentialAddSkipList, 1/35 promotion prob.
+28946938 insert operations, 28946938 size tree, created in 600000ms
+59754268 find operations, performed in 600000ms

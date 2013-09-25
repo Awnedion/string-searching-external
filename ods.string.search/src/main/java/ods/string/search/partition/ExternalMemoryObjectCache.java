@@ -18,6 +18,12 @@ import org.xerial.snappy.SnappyOutputStream;
 
 public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 {
+	/**
+	 * 64 bytes per LinkedHashMap.Entry + 32 bytes for Block value + 64 bytes for String key
+	 * minimum.
+	 */
+	private static final long BASE_CACHED_BLOCK_BYTE_SIZE = 160;
+
 	private class Block
 	{
 		public long previousByteSize = 0;
@@ -30,8 +36,12 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 
 		public void updateSizeEstimate()
 		{
+			if (data == null)
+			{
+				System.out.println("wtf");
+			}
 			inMemoryByteEstimate -= previousByteSize;
-			previousByteSize = data.getByteSize();
+			previousByteSize = data.getByteSize() + BASE_CACHED_BLOCK_BYTE_SIZE;
 			inMemoryByteEstimate += previousByteSize;
 		}
 	}

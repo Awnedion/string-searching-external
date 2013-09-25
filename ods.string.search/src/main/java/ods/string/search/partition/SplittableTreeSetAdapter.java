@@ -1,5 +1,7 @@
 package ods.string.search.partition;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
@@ -14,7 +16,7 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 	private static final int BYTES_PER_NODE = 64;
 
 	private TreeSet<T> adaptee;
-	private transient boolean dirty = false;
+	private transient boolean dirty = true;
 	private int bytesPerNodeWithData = -1;
 	private long dataBytesEstimate = 0;
 
@@ -154,6 +156,13 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 		for (int x = 0; x < halfwaySize; x++)
 			iter.next();
 		return iter.next();
+	}
+
+	private void readObject(ObjectInputStream inputStream) throws IOException,
+			ClassNotFoundException
+	{
+		inputStream.defaultReadObject();
+		dirty = false;
 	}
 
 }
