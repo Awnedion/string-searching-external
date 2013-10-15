@@ -12,4 +12,6 @@ public interface SplittableSet<T extends Comparable<T> & Serializable> extends
 	boolean merge(SplittableSet<T> t);
 
 	T locateMiddleValue();
+
+	T floor(T val);
 }

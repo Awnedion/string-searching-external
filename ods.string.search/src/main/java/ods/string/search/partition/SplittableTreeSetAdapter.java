@@ -36,7 +36,8 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 	@Override
 	public long getByteSize()
 	{
-		return adaptee.size() * bytesPerNodeWithData + (dataBytesEstimate << 1);
+		// 16 base object, 24 adapter variables, 24 treeSet variables, 40 treeMap
+		return adaptee.size() * bytesPerNodeWithData + (dataBytesEstimate << 1) + 104;
 	}
 
 	private int getObjectBaseSize(T obj)
@@ -163,6 +164,12 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 	{
 		inputStream.defaultReadObject();
 		dirty = false;
+	}
+
+	@Override
+	public T floor(T val)
+	{
+		return adaptee.floor(val);
 	}
 
 }

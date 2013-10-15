@@ -365,6 +365,9 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	public SplittableSet<T> split(T x)
 	{
+		if (r == nil)
+			return new Treap<T>();
+
 		Node<T> treeNode = findLast(x);
 		Treap<T> t = new Treap<T>(c);
 		if (treeNode.x.equals(x))
@@ -641,6 +644,31 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	}
 
 	/**
+	 * Search for a value equal to the specified value in the tree. If the specified value doesn't
+	 * exist, return the closest value that is less than the specified value.
+	 */
+	protected Node<T> findLENode(T x)
+	{
+		Node<T> w = r, z = nil;
+		while (w != nil)
+		{
+			int comp = c.compare(x, w.x);
+			if (comp < 0)
+			{
+				w = w.left;
+			} else if (comp > 0)
+			{
+				z = w;
+				w = w.right;
+			} else
+			{
+				return w;
+			}
+		}
+		return z;
+	}
+
+	/**
 	 * Find the node that follows w in an in-order traversal
 	 * 
 	 * @param w
@@ -683,7 +711,8 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	@Override
 	public long getByteSize()
 	{
-		return (r == null ? 0 : r.size) * bytesPerNodeWithData + (dataBytesEstimate << 1);
+		// 16 base object, 56 treap variables, 24 comparator
+		return (r == null ? 0 : r.size) * bytesPerNodeWithData + (dataBytesEstimate << 1) + 96;
 	}
 
 	public static int getObjectBaseSize(Class<?> obj)
@@ -751,5 +780,12 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 			}
 		}
 		return curNode.x;
+	}
+
+	@Override
+	public T floor(T val)
+	{
+		Node<T> result = findLENode(val);
+		return result == null ? null : result.x;
 	}
 }

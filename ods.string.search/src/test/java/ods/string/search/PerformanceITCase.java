@@ -10,6 +10,7 @@ import ods.string.search.array.CentroidTree;
 import ods.string.search.array.VebIndexLayout;
 import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
+import ods.string.search.partition.ExternalizableLinkedList;
 import ods.string.search.partition.SplittableTreeSetAdapter;
 import ods.string.search.partition.Treap;
 
@@ -34,6 +35,7 @@ public class PerformanceITCase
 		}
 		Assert.assertTrue(Utils.deleteRecursively(new File("target/centroidTree")));
 		Assert.assertTrue(Utils.deleteRecursively(partitionDir));
+		System.out.println("Deletion Complete");
 	}
 
 	@Test
@@ -118,7 +120,7 @@ public class PerformanceITCase
 	public void testRandomAddSkipList()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 1000000000l);
+				"target/treap"), 1. / 35., 1000000000l, ExternalizableLinkedList.class);
 		fillTreeRandomly(tree, 600000);
 	}
 
@@ -126,7 +128,23 @@ public class PerformanceITCase
 	public void testSequentialAddSkipList()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 1000000000l);
+				"target/treap"), 1. / 35., 1000000000l, ExternalizableLinkedList.class);
+		fillTreeSequentially(tree, 600000);
+	}
+
+	@Test
+	public void testRandomAddSkipListSets()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 100., 1000000000l, Treap.class);
+		fillTreeRandomly(tree, 600000);
+	}
+
+	@Test
+	public void testSequentialAddSkipListSets()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 35., 1000000000l, Treap.class);
 		fillTreeSequentially(tree, 600000);
 	}
 

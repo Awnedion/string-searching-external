@@ -12,9 +12,6 @@ public class ExternalizableLinkedList<T extends Serializable> extends LinkedList
 
 	private static final int BYTES_PER_NODE = 40;
 
-	protected String nextPartitionId;
-	protected String prevPartitionId;
-
 	private long dataBytesEstimate = 0;
 	private transient boolean dirty = true;
 	private int bytesPerNodeWithData = -1;
@@ -27,7 +24,8 @@ public class ExternalizableLinkedList<T extends Serializable> extends LinkedList
 	@Override
 	public long getByteSize()
 	{
-		return size() * bytesPerNodeWithData + (dataBytesEstimate << 1) + 72;
+		// 16 class object, 16 for child variables, 24 linkedList variables
+		return size() * bytesPerNodeWithData + (dataBytesEstimate << 1) + 56;
 	}
 
 	@Override

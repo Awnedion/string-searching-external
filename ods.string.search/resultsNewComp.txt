@@ -15,10 +15,15 @@
 6283169 prefix search operations, 9193492 elements returned, performed in 600000ms
 
 //testRandomAddSkipList, 1/35 promotion prob.
-17469390 insert operations, 9497784 size tree, created in 600000ms
-11643642 find operations, performed in 600000ms
-12325594 prefix search operations, 18197941 elements returned, performed in 600000ms
+16979409 insert operations, 9249721 size tree, created in 600000ms
+11680776 find operations, performed in 600000ms
+12110350 prefix search operations, 17411684 elements returned, performed in 600000ms
 
 //testSequentialAddSkipList, 1/35 promotion prob.
 28946938 insert operations, 28946938 size tree, created in 600000ms
 59754268 find operations, performed in 600000ms
+
+//testRandomAddSkipListSets, 1. / 100. promotion prob.
+17027178 insert operations, 9273877 size tree, created in 600000ms
+9965613 find operations, performed in 600000ms
+4044041 prefix search operations, 5826487 elements returned, performed in 600000ms
