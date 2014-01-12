@@ -3,6 +3,7 @@ package ods.string.search.partition;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.LinkedList;
 
 public class ExternalizableLinkedList<T extends Serializable> extends LinkedList<T> implements
@@ -19,6 +20,14 @@ public class ExternalizableLinkedList<T extends Serializable> extends LinkedList
 	public ExternalizableLinkedList()
 	{
 		super();
+	}
+
+	public ExternalizableLinkedList(Collection<T> c)
+	{
+		for (T elem : c)
+		{
+			add(size(), elem);
+		}
 	}
 
 	@Override

@@ -23,7 +23,15 @@
 28946938 insert operations, 28946938 size tree, created in 600000ms
 59754268 find operations, performed in 600000ms
 
+//testSequentialAddSkipList, 1/300 promotion prob.
+2420640 insert operations, 2420640 size tree, created in 600000ms
+2404691 find operations, performed in 600000ms
+
 //testRandomAddSkipListSets, 1. / 100. promotion prob.
 17027178 insert operations, 9273877 size tree, created in 600000ms
 9965613 find operations, performed in 600000ms
 4044041 prefix search operations, 5826487 elements returned, performed in 600000ms
+
+//testSequentialAddSkipListSets, 1/300 promotion prob.
+86998495 insert operations, 86998495 size tree, created in 600000ms
+243140760 find operations, performed in 600000ms

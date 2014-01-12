@@ -11,6 +11,7 @@ import ods.string.search.array.VebIndexLayout;
 import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
 import ods.string.search.partition.ExternalizableLinkedList;
+import ods.string.search.partition.ExternalizableLinkedListSet;
 import ods.string.search.partition.SplittableTreeSetAdapter;
 import ods.string.search.partition.Treap;
 
@@ -109,6 +110,14 @@ public class PerformanceITCase
 	}
 
 	@Test
+	public void testRandomAddExternalLinkedList()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 400, 1000000000l, ExternalizableLinkedListSet.class);
+		fillTreeRandomly(tree, 600000, 1000000);
+	}
+
+	@Test
 	public void testSequentialAddExternalTreap()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
@@ -117,38 +126,52 @@ public class PerformanceITCase
 	}
 
 	@Test
+	public void testSequentialAddExternalLinkedList()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 250, 1000000000l, ExternalizableLinkedListSet.class);
+		fillTreeSequentially(tree, 600000);
+	}
+
+	@Test
 	public void testRandomAddSkipList()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 1000000000l, ExternalizableLinkedList.class);
-		fillTreeRandomly(tree, 600000);
+				"target/treap"), 1. / 35., 50000000l, ExternalizableLinkedList.class);
+		fillTreeRandomly(tree, 60000, 100000);
 	}
 
 	@Test
 	public void testSequentialAddSkipList()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 1000000000l, ExternalizableLinkedList.class);
-		fillTreeSequentially(tree, 600000);
+				"target/treap"), 1. / 35., 50000000l, ExternalizableLinkedList.class);
+		fillTreeSequentially(tree, 60000, 400000);
 	}
 
 	@Test
 	public void testRandomAddSkipListSets()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 100., 1000000000l, Treap.class);
-		fillTreeRandomly(tree, 600000);
+				"target/treap"), 1. / 100., 50000000l, Treap.class);
+		fillTreeRandomly(tree, 60000, 100000);
 	}
 
 	@Test
 	public void testSequentialAddSkipListSets()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 1000000000l, Treap.class);
-		fillTreeSequentially(tree, 600000);
+				"target/treap"), 1. / 300., 1000000000l, Treap.class);
+		fillTreeSequentially(tree, 60000, 1000000);
 	}
 
 	private void fillTreeRandomly(PrefixSearchableSet<String> tree, long timeLimit)
+	{
+		fillTreeRandomly(tree, timeLimit, 999999999999l);
+	}
+
+	private void fillTreeRandomly(PrefixSearchableSet<String> tree, long timeLimit,
+			long outputInterval)
 	{
 		Random rand = new Random(1);
 
@@ -156,6 +179,10 @@ public class PerformanceITCase
 		int count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
+			if (count % outputInterval == 0)
+				System.out.println(count + " insert operations, " + tree.size()
+						+ " size tree, created in " + (System.currentTimeMillis() - startTime)
+						+ "ms");
 			String input = generateRandomString(rand, 1);
 			tree.add(input);
 			count++;
@@ -167,6 +194,9 @@ public class PerformanceITCase
 		count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
+			if (count % outputInterval == 0)
+				System.out.println(count + " find operations, performed in "
+						+ (System.currentTimeMillis() - startTime) + "ms");
 			String input = generateRandomString(rand, 1);
 			tree.contains(input);
 			count++;
@@ -178,6 +208,10 @@ public class PerformanceITCase
 		long iterationCount = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
+			if (count % outputInterval == 0)
+				System.out.println(count + " prefix search operations, " + iterationCount
+						+ " elements returned, performed in "
+						+ (System.currentTimeMillis() - startTime) + "ms");
 			String input = generateRandomString(rand, 6);
 			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
 					+ (char) (input.charAt(input.length() - 1) + 1));
@@ -205,10 +239,20 @@ public class PerformanceITCase
 
 	private void fillTreeSequentially(PrefixSearchableSet<String> tree, long timeLimit)
 	{
+		fillTreeSequentially(tree, timeLimit, 999999999999l);
+	}
+
+	private void fillTreeSequentially(PrefixSearchableSet<String> tree, long timeLimit,
+			long outputInterval)
+	{
 		long startTime = System.currentTimeMillis();
 		int count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
+			if (count % outputInterval == 0)
+				System.out.println(count + " insert operations, " + tree.size()
+						+ " size tree, created in " + (System.currentTimeMillis() - startTime)
+						+ "ms");
 			String val = convertToFixedLengthString(count);
 			tree.add(val);
 			count++;
@@ -216,14 +260,40 @@ public class PerformanceITCase
 		System.out.println(count + " insert operations, " + tree.size() + " size tree, created in "
 				+ timeLimit + "ms");
 
+		int treeSize = (int) tree.size();
 		startTime = System.currentTimeMillis();
 		count = 0;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			tree.contains(convertToFixedLengthString(count));
+			if (count % outputInterval == 0)
+				System.out.println(count + " find operations, performed in "
+						+ (System.currentTimeMillis() - startTime) + "ms");
+			tree.contains(convertToFixedLengthString(count % treeSize));
 			count++;
 		}
 		System.out.println(count + " find operations, performed in " + timeLimit + "ms");
+
+		startTime = System.currentTimeMillis();
+		count = 0;
+		long iterationCount = 0;
+		while (System.currentTimeMillis() - startTime < timeLimit)
+		{
+			if (count % outputInterval == 0)
+				System.out.println(count + " prefix search operations, " + iterationCount
+						+ " elements returned, performed in "
+						+ (System.currentTimeMillis() - startTime) + "ms");
+			String input = convertToFixedLengthString(count % treeSize);
+			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
+					+ (char) (input.charAt(input.length() - 1) + 1));
+			while (iter.hasNext())
+			{
+				iter.next();
+				iterationCount++;
+			}
+			count++;
+		}
+		System.out.println(count + " prefix search operations, " + iterationCount
+				+ " elements returned, performed in " + timeLimit + "ms");
 
 		System.out.println(Runtime.getRuntime().totalMemory());
 	}

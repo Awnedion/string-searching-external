@@ -39,6 +39,14 @@ public class ExternalMemorySplittableSetTest
 		testOperations(tree);
 	}
 
+	@Test
+	public void testAddSearchRemoveLinkedList()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 500, 300000, ExternalizableLinkedListSet.class);
+		testOperations(tree);
+	}
+
 	static void testOperations(PrefixSearchableSet<String> tree)
 	{
 		TreeSet<String> set = new TreeSet<String>();
