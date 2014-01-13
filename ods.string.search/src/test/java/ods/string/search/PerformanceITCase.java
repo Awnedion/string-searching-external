@@ -10,6 +10,7 @@ import ods.string.search.array.CentroidTree;
 import ods.string.search.array.VebIndexLayout;
 import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
+import ods.string.search.partition.ExternalizableArrayList;
 import ods.string.search.partition.ExternalizableLinkedList;
 import ods.string.search.partition.ExternalizableLinkedListSet;
 import ods.string.search.partition.SplittableTreeSetAdapter;
@@ -97,72 +98,138 @@ public class PerformanceITCase
 	public void testRandomAddExternalTreap()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 250, 1000000000l, Treap.class);
-		fillTreeRandomly(tree, 600000);
+				new File("target/treap"), 125, 50000000l, new Treap<String>());
+		fillTreeRandomly(tree, 60000, 100000);
 	}
 
 	@Test
 	public void testRandomAddExternalTreeSet()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 400, 1000000000l, SplittableTreeSetAdapter.class);
-		fillTreeRandomly(tree, 600000);
+				new File("target/treap"), 100, 50000000l, new SplittableTreeSetAdapter<String>());
+		fillTreeRandomly(tree, 60000, 100000);
 	}
 
 	@Test
-	public void testRandomAddExternalLinkedList()
+	public void testRandomAddExternalLinkedListBinarySearch()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 400, 1000000000l, ExternalizableLinkedListSet.class);
-		fillTreeRandomly(tree, 600000, 1000000);
+				new File("target/treap"), 70, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableLinkedList<String>(), false));
+		fillTreeRandomly(tree, 60000, 150000);
+	}
+
+	@Test
+	public void testRandomAddExternalLinkedListLinearCompare()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 55, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableLinkedList<String>(), true));
+		fillTreeRandomly(tree, 60000, 150000);
+	}
+
+	@Test
+	public void testRandomAddExternalArrayListBinarySearch()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 70, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+		fillTreeRandomly(tree, 60000, 150000);
+	}
+
+	@Test
+	public void testRandomAddExternalArrayListLinearCompare()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 55, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), true));
+		fillTreeRandomly(tree, 60000, 150000);
 	}
 
 	@Test
 	public void testSequentialAddExternalTreap()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 250, 1000000000l, Treap.class);
-		fillTreeSequentially(tree, 600000);
+				new File("target/treap"), 5000, 50000000l, new Treap<String>());
+		fillTreeSequentially(tree, 60000, 6000000);
 	}
 
 	@Test
 	public void testSequentialAddExternalLinkedList()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 250, 1000000000l, ExternalizableLinkedListSet.class);
-		fillTreeSequentially(tree, 600000);
+				new File("target/treap"), 500, 50000000l, new ExternalizableLinkedListSet<String>());
+		fillTreeSequentially(tree, 60000, 2000000);
+	}
+
+	@Test
+	public void testSequentialAddExternalArrayListBinarySearch()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 7500, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+		fillTreeSequentially(tree, 60000, 8000000);
 	}
 
 	@Test
 	public void testRandomAddSkipList()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 50000000l, ExternalizableLinkedList.class);
+				"target/treap"), 1. / 35., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableLinkedList<String>(), true));
 		fillTreeRandomly(tree, 60000, 100000);
-	}
-
-	@Test
-	public void testSequentialAddSkipList()
-	{
-		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 50000000l, ExternalizableLinkedList.class);
-		fillTreeSequentially(tree, 60000, 400000);
 	}
 
 	@Test
 	public void testRandomAddSkipListSets()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 100., 50000000l, Treap.class);
+				"target/treap"), 1. / 100., 50000000l, new Treap<String>());
 		fillTreeRandomly(tree, 60000, 100000);
+	}
+
+	@Test
+	public void testRandomAddSkipListArrayListLinearCompare()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 45., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableArrayList<String>(), true));
+		fillTreeRandomly(tree, 60000, 200000);
+	}
+
+	@Test
+	public void testRandomAddSkipListArrayListBinarySearch()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 55., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableArrayList<String>(), false));
+		fillTreeRandomly(tree, 60000, 200000);
+	}
+
+	@Test
+	public void testSequentialAddSkipList()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 50., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableLinkedList<String>(), true));
+		fillTreeSequentially(tree, 60000, 600000);
 	}
 
 	@Test
 	public void testSequentialAddSkipListSets()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 300., 1000000000l, Treap.class);
-		fillTreeSequentially(tree, 60000, 1000000);
+				"target/treap"), 1. / 450., 50000000l, new Treap<String>());
+		fillTreeSequentially(tree, 60000, 2000000);
+	}
+
+	@Test
+	public void testSequentialAddSkipListArrayListBinarySearch()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 3000., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableArrayList<String>(), false));
+		fillTreeSequentially(tree, 60000, 6000000);
 	}
 
 	private void fillTreeRandomly(PrefixSearchableSet<String> tree, long timeLimit)

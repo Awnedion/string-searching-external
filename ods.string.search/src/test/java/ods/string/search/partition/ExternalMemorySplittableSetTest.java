@@ -27,7 +27,7 @@ public class ExternalMemorySplittableSetTest
 	public void testAddSearchRemove()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 300000, Treap.class);
+				new File("target/treap"), 500, 300000, new Treap<String>());
 		testOperations(tree);
 	}
 
@@ -35,15 +35,43 @@ public class ExternalMemorySplittableSetTest
 	public void testAddSearchRemoveTreeSet()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 300000, SplittableTreeSetAdapter.class);
+				new File("target/treap"), 500, 300000, new SplittableTreeSetAdapter<String>());
 		testOperations(tree);
 	}
 
 	@Test
-	public void testAddSearchRemoveLinkedList()
+	public void testAddSearchRemoveLinkedListBinarySearch()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 300000, ExternalizableLinkedListSet.class);
+				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+						new ExternalizableLinkedList<String>(), false));
+		testOperations(tree);
+	}
+
+	@Test
+	public void testAddSearchRemoveLinkedListLinearCompare()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+						new ExternalizableLinkedList<String>(), true));
+		testOperations(tree);
+	}
+
+	@Test
+	public void testAddSearchRemoveArrayListBinarySearch()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+		testOperations(tree);
+	}
+
+	@Test
+	public void testAddSearchRemoveArrayListLinearCompare()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), true));
 		testOperations(tree);
 	}
 
@@ -92,7 +120,7 @@ public class ExternalMemorySplittableSetTest
 	public void testIteratorAll()
 	{
 		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(
-				new File("target/treap"), 50, 30000000, Treap.class);
+				new File("target/treap"), 50, 30000000, new Treap<Integer>());
 
 		testFullIterator(tree);
 	}
@@ -132,7 +160,7 @@ public class ExternalMemorySplittableSetTest
 	public void testIteratorRange()
 	{
 		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(
-				new File("target/treap"), 50, 30000000, Treap.class);
+				new File("target/treap"), 50, 30000000, new Treap<Integer>());
 
 		testRangeIterators(tree);
 	}
@@ -141,7 +169,7 @@ public class ExternalMemorySplittableSetTest
 	public void testIteratorRangeTreeSet()
 	{
 		ExternalMemorySplittableSet<Integer> tree = new ExternalMemorySplittableSet<Integer>(
-				new File("target/treap"), 50, 30000000, SplittableTreeSetAdapter.class);
+				new File("target/treap"), 50, 30000000, new SplittableTreeSetAdapter<Integer>());
 
 		testRangeIterators(tree);
 	}
@@ -182,7 +210,7 @@ public class ExternalMemorySplittableSetTest
 	public void testIteratorPrefix()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 50, 30000000, Treap.class);
+				new File("target/treap"), 50, 30000000, new Treap<String>());
 
 		testPrefixIterators(tree);
 	}

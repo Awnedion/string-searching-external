@@ -65,6 +65,12 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		r = nil;
 	}
 
+	public Treap(Treap<T> template)
+	{
+		r = nil;
+		c = template.c;
+	}
+
 	public Treap(Comparator<T> c)
 	{
 		this.c = c;

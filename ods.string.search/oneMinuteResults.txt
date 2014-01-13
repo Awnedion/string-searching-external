@@ -1,0 +1,441 @@
+testRandomAddExternalTreap()
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 100, 50000000l, Treap.class);
+		fillTreeRandomly(tree, 60000, 100000);
+100000 insert operations, 73168 size tree, created in 276ms
+200000 insert operations, 141132 size tree, created in 422ms
+300000 insert operations, 207251 size tree, created in 588ms
+400000 insert operations, 272156 size tree, created in 743ms
+500000 insert operations, 336165 size tree, created in 933ms
+600000 insert operations, 399495 size tree, created in 4455ms
+700000 insert operations, 462339 size tree, created in 18355ms
+800000 insert operations, 524794 size tree, created in 42563ms
+853839 insert operations, 558057 size tree, created in 60000ms
+0 find operations, performed in 0ms
+100000 find operations, performed in 14880ms
+200000 find operations, performed in 25760ms
+300000 find operations, performed in 36269ms
+400000 find operations, performed in 46612ms
+500000 find operations, performed in 57047ms
+528479 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+100000 prefix search operations, 7781 elements returned, performed in 13455ms
+200000 prefix search operations, 15629 elements returned, performed in 26771ms
+300000 prefix search operations, 23185 elements returned, performed in 40111ms
+400000 prefix search operations, 30934 elements returned, performed in 53477ms
+448447 prefix search operations, 34652 elements returned, performed in 60000ms
+
+
+//testRandomAddExternalTreeSet()
+//		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+//				new File("target/treap"), 100, 50000000l, SplittableTreeSetAdapter.class);
+//		fillTreeRandomly(tree, 60000, 100000);
+100000 insert operations, 73168 size tree, created in 314ms
+200000 insert operations, 141132 size tree, created in 465ms
+300000 insert operations, 207251 size tree, created in 622ms
+400000 insert operations, 272156 size tree, created in 769ms
+500000 insert operations, 336165 size tree, created in 1101ms
+600000 insert operations, 399495 size tree, created in 8761ms
+700000 insert operations, 462339 size tree, created in 25918ms
+800000 insert operations, 524794 size tree, created in 50588ms
+834520 insert operations, 546138 size tree, created in 60000ms
+0 find operations, performed in 0ms
+100000 find operations, performed in 12065ms
+200000 find operations, performed in 21369ms
+300000 find operations, performed in 30622ms
+400000 find operations, performed in 39877ms
+500000 find operations, performed in 49023ms
+600000 find operations, performed in 58366ms
+618062 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+100000 prefix search operations, 7732 elements returned, performed in 12097ms
+200000 prefix search operations, 15212 elements returned, performed in 23958ms
+300000 prefix search operations, 22659 elements returned, performed in 35822ms
+400000 prefix search operations, 30325 elements returned, performed in 47576ms
+500000 prefix search operations, 37935 elements returned, performed in 59626ms
+503358 prefix search operations, 38158 elements returned, performed in 60000ms
+
+
+
+//testRandomAddExternalLinkedListBinarySearch()
+//ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+//				new File("target/treap"), 55, 50000000l, ExternalizableLinkedListSet.class);
+//		fillTreeRandomly(tree, 60000, 150000);
+150000 insert operations, 107453 size tree, created in 431ms
+300000 insert operations, 207251 size tree, created in 717ms
+450000 insert operations, 304219 size tree, created in 1038ms
+600000 insert operations, 399495 size tree, created in 1736ms
+750000 insert operations, 493649 size tree, created in 15929ms
+900000 insert operations, 586463 size tree, created in 44814ms
+960056 insert operations, 623526 size tree, created in 60000ms
+0 find operations, performed in 0ms
+150000 find operations, performed in 17495ms
+300000 find operations, performed in 29291ms
+450000 find operations, performed in 41179ms
+600000 find operations, performed in 53042ms
+690125 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+150000 prefix search operations, 12634 elements returned, performed in 15716ms
+300000 prefix search operations, 25657 elements returned, performed in 31344ms
+450000 prefix search operations, 38366 elements returned, performed in 47093ms
+572996 prefix search operations, 48763 elements returned, performed in 60000ms
+
+
+
+testRandomAddExternalLinkedListLinearCompare()
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 55, 50000000l, new ExternalizableLinkedListSet<String>(
+						true));
+		fillTreeRandomly(tree, 60000, 150000);
+150000 insert operations, 107453 size tree, created in 493ms
+300000 insert operations, 207251 size tree, created in 816ms
+450000 insert operations, 304219 size tree, created in 1150ms
+600000 insert operations, 399495 size tree, created in 1896ms
+750000 insert operations, 493649 size tree, created in 16169ms
+900000 insert operations, 586463 size tree, created in 46274ms
+952902 insert operations, 619146 size tree, created in 60000ms
+0 find operations, performed in 0ms
+150000 find operations, performed in 18292ms
+300000 find operations, performed in 30209ms
+450000 find operations, performed in 41873ms
+600000 find operations, performed in 53706ms
+678082 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+150000 prefix search operations, 12590 elements returned, performed in 15420ms
+300000 prefix search operations, 25577 elements returned, performed in 30936ms
+450000 prefix search operations, 38229 elements returned, performed in 46393ms
+582211 prefix search operations, 49300 elements returned, performed in 60000ms
+
+
+
+testRandomAddExternalArrayListBinarySearch()
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 70, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+		fillTreeRandomly(tree, 60000, 150000);
+150000 insert operations, 107453 size tree, created in 366ms
+300000 insert operations, 207251 size tree, created in 563ms
+450000 insert operations, 304219 size tree, created in 789ms
+600000 insert operations, 399495 size tree, created in 1040ms
+750000 insert operations, 493649 size tree, created in 1295ms
+900000 insert operations, 586463 size tree, created in 5766ms
+1050000 insert operations, 678811 size tree, created in 25589ms
+1200000 insert operations, 770175 size tree, created in 57113ms
+1208378 insert operations, 775261 size tree, created in 60000ms
+0 find operations, performed in 0ms
+150000 find operations, performed in 18836ms
+300000 find operations, performed in 30014ms
+450000 find operations, performed in 40523ms
+600000 find operations, performed in 50834ms
+732887 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+150000 prefix search operations, 16392 elements returned, performed in 13933ms
+300000 prefix search operations, 32351 elements returned, performed in 27711ms
+450000 prefix search operations, 48439 elements returned, performed in 41524ms
+600000 prefix search operations, 64547 elements returned, performed in 55412ms
+649174 prefix search operations, 69733 elements returned, performed in 60000ms
+
+
+
+testRandomAddExternalArrayListLinearCompare()
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 55, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), true));
+		fillTreeRandomly(tree, 60000, 150000);
+150000 insert operations, 107453 size tree, created in 444ms
+300000 insert operations, 207251 size tree, created in 747ms
+450000 insert operations, 304219 size tree, created in 1053ms
+600000 insert operations, 399495 size tree, created in 1354ms
+750000 insert operations, 493649 size tree, created in 1663ms
+900000 insert operations, 586463 size tree, created in 7417ms
+1050000 insert operations, 678811 size tree, created in 28387ms
+1200000 insert operations, 770175 size tree, created in 59007ms
+1203871 insert operations, 772502 size tree, created in 60000ms
+0 find operations, performed in 0ms
+150000 find operations, performed in 19278ms
+300000 find operations, performed in 29998ms
+450000 find operations, performed in 40507ms
+600000 find operations, performed in 50797ms
+733824 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+150000 prefix search operations, 16295 elements returned, performed in 13986ms
+300000 prefix search operations, 32133 elements returned, performed in 27857ms
+450000 prefix search operations, 48084 elements returned, performed in 41648ms
+600000 prefix search operations, 64121 elements returned, performed in 55508ms
+647884 prefix search operations, 69196 elements returned, performed in 60000ms
+
+
+
+testSequentialAddExternalTreap()
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 5000, 50000000l, Treap.class);
+		fillTreeSequentially(tree, 60000, 6000000);
+6000000 insert operations, 6000000 size tree, created in 13802ms
+12000000 insert operations, 12000000 size tree, created in 27799ms
+18000000 insert operations, 18000000 size tree, created in 41694ms
+24000000 insert operations, 24000000 size tree, created in 55916ms
+25627400 insert operations, 25627400 size tree, created in 60000ms
+0 find operations, performed in 0ms
+6000000 find operations, performed in 13283ms
+12000000 find operations, performed in 25981ms
+18000000 find operations, performed in 38666ms
+24000000 find operations, performed in 51427ms
+27995148 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+6000000 prefix search operations, 6000000 elements returned, performed in 15490ms
+12000000 prefix search operations, 12000000 elements returned, performed in 30909ms
+18000000 prefix search operations, 18000000 elements returned, performed in 46272ms
+23326443 prefix search operations, 23326443 elements returned, performed in 60000ms
+
+
+
+//testSequentialAddExternalLinkedList()
+//		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+//				new File("target/treap"), 500, 50000000l, ExternalizableLinkedListSet.class);
+//		fillTreeSequentially(tree, 60000, 2000000);
+2000000 insert operations, 2000000 size tree, created in 9616ms
+4000000 insert operations, 4000000 size tree, created in 20488ms
+6000000 insert operations, 6000000 size tree, created in 30164ms
+8000000 insert operations, 8000000 size tree, created in 40052ms
+10000000 insert operations, 10000000 size tree, created in 50295ms
+11900871 insert operations, 11900871 size tree, created in 60000ms
+0 find operations, performed in 0ms
+2000000 find operations, performed in 7747ms
+4000000 find operations, performed in 14554ms
+6000000 find operations, performed in 21274ms
+8000000 find operations, performed in 28082ms
+10000000 find operations, performed in 34874ms
+12000000 find operations, performed in 41891ms
+14000000 find operations, performed in 48704ms
+16000000 find operations, performed in 55428ms
+17355208 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+2000000 prefix search operations, 2000000 elements returned, performed in 9922ms
+4000000 prefix search operations, 4000000 elements returned, performed in 19724ms
+6000000 prefix search operations, 6000000 elements returned, performed in 29443ms
+8000000 prefix search operations, 8000000 elements returned, performed in 39283ms
+10000000 prefix search operations, 10000000 elements returned, performed in 49218ms
+12000000 prefix search operations, 12000000 elements returned, performed in 59319ms
+12149568 prefix search operations, 12149568 elements returned, performed in 60000ms
+
+
+
+testSequentialAddExternalArrayListBinarySearch()
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 7500, 50000000l, new ExternalizableLinkedListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+		fillTreeSequentially(tree, 60000, 8000000);
+8000000 insert operations, 8000000 size tree, created in 12476ms
+16000000 insert operations, 16000000 size tree, created in 25240ms
+24000000 insert operations, 24000000 size tree, created in 38072ms
+32000000 insert operations, 32000000 size tree, created in 51120ms
+37271252 insert operations, 37271252 size tree, created in 60000ms
+0 find operations, performed in 0ms
+8000000 find operations, performed in 11861ms
+16000000 find operations, performed in 23368ms
+24000000 find operations, performed in 34899ms
+32000000 find operations, performed in 46354ms
+40000000 find operations, performed in 58161ms
+41328127 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+8000000 prefix search operations, 8000000 elements returned, performed in 15523ms
+16000000 prefix search operations, 16000000 elements returned, performed in 31161ms
+24000000 prefix search operations, 24000000 elements returned, performed in 47110ms
+30441393 prefix search operations, 30441393 elements returned, performed in 60000ms
+
+
+
+testRandomAddSkipList()
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 35., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableLinkedList<String>(), true));
+		fillTreeRandomly(tree, 60000, 100000);
+100000 insert operations, 73168 size tree, created in 746ms
+200000 insert operations, 141132 size tree, created in 1194ms
+300000 insert operations, 207251 size tree, created in 1758ms
+400000 insert operations, 272156 size tree, created in 2380ms
+500000 insert operations, 336165 size tree, created in 3055ms
+600000 insert operations, 399495 size tree, created in 6154ms
+700000 insert operations, 462339 size tree, created in 15741ms
+800000 insert operations, 524794 size tree, created in 30639ms
+900000 insert operations, 586463 size tree, created in 53339ms
+921535 insert operations, 599853 size tree, created in 60000ms
+0 find operations, performed in 0ms
+100000 find operations, performed in 9844ms
+200000 find operations, performed in 15981ms
+300000 find operations, performed in 21746ms
+400000 find operations, performed in 27329ms
+500000 find operations, performed in 32823ms
+600000 find operations, performed in 38388ms
+700000 find operations, performed in 43904ms
+800000 find operations, performed in 49381ms
+900000 find operations, performed in 54951ms
+989957 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+100000 prefix search operations, 8492 elements returned, performed in 14910ms
+200000 prefix search operations, 16849 elements returned, performed in 29605ms
+300000 prefix search operations, 25201 elements returned, performed in 44471ms
+400000 prefix search operations, 33521 elements returned, performed in 59425ms
+404121 prefix search operations, 33880 elements returned, performed in 60000ms
+
+
+
+testRandomAddSkipListSets()
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 100., 50000000l, Treap.class);
+		fillTreeRandomly(tree, 60000, 100000);
+100000 insert operations, 73168 size tree, created in 689ms
+200000 insert operations, 141132 size tree, created in 981ms
+300000 insert operations, 207251 size tree, created in 1296ms
+400000 insert operations, 272156 size tree, created in 1627ms
+500000 insert operations, 336165 size tree, created in 1973ms
+600000 insert operations, 399495 size tree, created in 5666ms
+700000 insert operations, 462339 size tree, created in 17825ms
+800000 insert operations, 524794 size tree, created in 39235ms
+875812 insert operations, 571620 size tree, created in 60000ms
+0 find operations, performed in 0ms
+100000 find operations, performed in 12851ms
+200000 find operations, performed in 23971ms
+300000 find operations, performed in 34487ms
+400000 find operations, performed in 45207ms
+500000 find operations, performed in 55820ms
+539293 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+100000 prefix search operations, 8062 elements returned, performed in 25142ms
+200000 prefix search operations, 16136 elements returned, performed in 49966ms
+240096 prefix search operations, 19300 elements returned, performed in 60000ms
+
+
+
+testRandomAddSkipListArrayListLinearCompare()
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 45., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableArrayList<String>(), true));
+		fillTreeRandomly(tree, 60000, 200000);
+200000 insert operations, 141132 size tree, created in 1134ms
+400000 insert operations, 272156 size tree, created in 2233ms
+600000 insert operations, 399495 size tree, created in 3509ms
+800000 insert operations, 524794 size tree, created in 6468ms
+1000000 insert operations, 648191 size tree, created in 24858ms
+1176791 insert operations, 756049 size tree, created in 60000ms
+0 find operations, performed in 0ms
+200000 find operations, performed in 16623ms
+400000 find operations, performed in 26565ms
+600000 find operations, performed in 36497ms
+800000 find operations, performed in 46261ms
+1000000 find operations, performed in 55906ms
+1082124 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+200000 prefix search operations, 21260 elements returned, performed in 26570ms
+400000 prefix search operations, 42510 elements returned, performed in 52642ms
+454272 prefix search operations, 48313 elements returned, performed in 60000ms
+
+
+
+testRandomAddSkipListArrayListBinarySearch()
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 45., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableArrayList<String>(), false));
+		fillTreeRandomly(tree, 60000, 200000);
+200000 insert operations, 141132 size tree, created in 892ms
+400000 insert operations, 272156 size tree, created in 1525ms
+600000 insert operations, 399495 size tree, created in 2197ms
+800000 insert operations, 524794 size tree, created in 4481ms
+1000000 insert operations, 648191 size tree, created in 20734ms
+1183307 insert operations, 759983 size tree, created in 60000ms
+0 find operations, performed in 0ms
+200000 find operations, performed in 17354ms
+400000 find operations, performed in 27429ms
+600000 find operations, performed in 37371ms
+800000 find operations, performed in 46839ms
+1000000 find operations, performed in 56173ms
+1080936 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+200000 prefix search operations, 21350 elements returned, performed in 25720ms
+400000 prefix search operations, 42784 elements returned, performed in 51074ms
+470161 prefix search operations, 50236 elements returned, performed in 60000ms
+
+
+
+testSequentialAddSkipList()
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 50., 50000000l, ExternalizableLinkedList.class);
+		fillTreeSequentially(tree, 60000, 600000);
+600000 insert operations, 600000 size tree, created in 7501ms
+1200000 insert operations, 1200000 size tree, created in 20696ms
+1800000 insert operations, 1800000 size tree, created in 34129ms
+2400000 insert operations, 2400000 size tree, created in 50044ms
+2587133 insert operations, 2587133 size tree, created in 60000ms
+0 find operations, performed in 0ms
+600000 find operations, performed in 12780ms
+1200000 find operations, performed in 20548ms
+1800000 find operations, performed in 28319ms
+2400000 find operations, performed in 39103ms
+3000000 find operations, performed in 49961ms
+3600000 find operations, performed in 57336ms
+3792029 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+600000 prefix search operations, 600000 elements returned, performed in 8156ms
+1200000 prefix search operations, 1200000 elements returned, performed in 16688ms
+1800000 prefix search operations, 1800000 elements returned, performed in 25601ms
+2400000 prefix search operations, 2400000 elements returned, performed in 37410ms
+3000000 prefix search operations, 3000000 elements returned, performed in 49144ms
+3600000 prefix search operations, 3600000 elements returned, performed in 57548ms
+3763289 prefix search operations, 3763289 elements returned, performed in 60000ms
+
+
+
+testSequentialAddSkipListSets()
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 400., 50000000l, Treap.class);
+		fillTreeSequentially(tree, 60000, 2000000);
+2000000 insert operations, 2000000 size tree, created in 8743ms
+4000000 insert operations, 4000000 size tree, created in 18357ms
+6000000 insert operations, 6000000 size tree, created in 27672ms
+8000000 insert operations, 8000000 size tree, created in 37071ms
+10000000 insert operations, 10000000 size tree, created in 46387ms
+12000000 insert operations, 12000000 size tree, created in 55883ms
+12931259 insert operations, 12931259 size tree, created in 60000ms
+0 find operations, performed in 0ms
+2000000 find operations, performed in 8482ms
+4000000 find operations, performed in 15450ms
+6000000 find operations, performed in 22077ms
+8000000 find operations, performed in 28603ms
+10000000 find operations, performed in 35213ms
+12000000 find operations, performed in 41686ms
+14000000 find operations, performed in 48225ms
+16000000 find operations, performed in 54879ms
+17521634 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+2000000 prefix search operations, 2000000 elements returned, performed in 10021ms
+4000000 prefix search operations, 4000000 elements returned, performed in 20087ms
+6000000 prefix search operations, 6000000 elements returned, performed in 30116ms
+8000000 prefix search operations, 8000000 elements returned, performed in 40103ms
+10000000 prefix search operations, 10000000 elements returned, performed in 49962ms
+12000000 prefix search operations, 12000000 elements returned, performed in 59757ms
+12056829 prefix search operations, 12056829 elements returned, performed in 60000ms
+
+
+
+testSequentialAddSkipListArrayListBinarySearch()
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1. / 3000., 50000000l, new ExternalizableLinkedListSet<String>(
+				new ExternalizableArrayList<String>(), false));
+		fillTreeSequentially(tree, 60000, 6000000);
+6000000 insert operations, 6000000 size tree, created in 14227ms
+12000000 insert operations, 12000000 size tree, created in 29340ms
+18000000 insert operations, 18000000 size tree, created in 44411ms
+24000000 insert operations, 24000000 size tree, created in 59225ms
+24280433 insert operations, 24280433 size tree, created in 60000ms
+0 find operations, performed in 0ms
+6000000 find operations, performed in 12258ms
+12000000 find operations, performed in 23592ms
+18000000 find operations, performed in 35021ms
+24000000 find operations, performed in 46162ms
+30000000 find operations, performed in 57509ms
+31367359 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+6000000 prefix search operations, 6000000 elements returned, performed in 22962ms
+12000000 prefix search operations, 12000000 elements returned, performed in 45852ms
+15758429 prefix search operations, 15758429 elements returned, performed in 60000ms
+

@@ -25,6 +25,11 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 		adaptee = new TreeSet<T>();
 	}
 
+	public SplittableTreeSetAdapter(SplittableTreeSetAdapter<T> template)
+	{
+		adaptee = new TreeSet<T>();
+	}
+
 	public SplittableTreeSetAdapter(Collection<T> elems)
 	{
 		adaptee = new TreeSet<T>(elems);

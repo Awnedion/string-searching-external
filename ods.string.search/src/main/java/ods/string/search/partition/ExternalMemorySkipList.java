@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -15,19 +14,23 @@ import ods.string.search.PrefixSearchableSet;
 public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> implements
 		PrefixSearchableSet<T>
 {
-	private static class SubList<T> implements ExternalizableMemoryObject, Iterable<T>
+	private static class SubList<T extends Comparable<T> & Serializable> implements
+			ExternalizableMemoryObject, Iterable<T>
 	{
 		private static final long serialVersionUID = -309297143139643805L;
 
 		public String nextPartitionId;
 		public String prevPartitionId;
-		public ExternalizableMemoryObject structure;
+		public SplittableSet<T> structure;
 
-		public SubList(Class<? extends ExternalizableMemoryObject> type)
+		@SuppressWarnings("unchecked")
+		public SubList(SplittableSet<T> type)
 		{
 			try
 			{
-				this.structure = type.newInstance();
+				Class<? extends SplittableSet<T>> implClass = (Class<? extends SplittableSet<T>>) type
+						.getClass();
+				this.structure = implClass.getConstructor(implClass).newInstance(type);
 			} catch (Exception e)
 			{
 				throw new RuntimeException(e);
@@ -47,7 +50,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			return structure.isDirty();
 		}
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public Iterator<T> iterator()
 		{
@@ -56,10 +58,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 
 		public long size()
 		{
-			if (structure instanceof Collection)
-				return ((Collection<?>) structure).size();
-			else
-				return ((PrefixSearchableSet<?>) structure).size();
+			return ((PrefixSearchableSet<?>) structure).size();
 		}
 	}
 
@@ -68,19 +67,19 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	private int maxHeight;
 	private int size;
 	private Random rand = new Random();
-	private Class<? extends ExternalizableMemoryObject> partitionImplementation;
-	private boolean isListPartitions;
+	private SplittableSet<T> partitionImplementation;
 	private Constructor<? extends Comparable<T>> comparableConstructor;
 
 	public ExternalMemorySkipList(File storageDirectory)
 	{
 		promotionProbability = 1. / 35.;
-		partitionImplementation = ExternalizableLinkedList.class;
+		partitionImplementation = new ExternalizableLinkedListSet<T>(
+				new ExternalizableLinkedList<T>(), true);
 		init(storageDirectory, 1000000000);
 	}
 
 	public ExternalMemorySkipList(File storageDirectory, double promotionProbability,
-			long cacheSize, Class<? extends ExternalizableMemoryObject> subListType)
+			long cacheSize, SplittableSet<T> subListType)
 	{
 		this.promotionProbability = promotionProbability;
 		partitionImplementation = subListType;
@@ -93,7 +92,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		maxHeight = 1;
 		SubList<T> root = new SubList<T>(partitionImplementation);
 		listCache.register("-1", root);
-		isListPartitions = (root.structure instanceof List);
 	}
 
 	@Override
@@ -132,16 +130,11 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		return false;
 	}
 
-	@SuppressWarnings("unchecked")
 	private void addToCollection(T u, SubList<T> subList, int suggestedIndex)
 	{
-		if (isListPartitions)
-			((List<T>) subList.structure).add(suggestedIndex, u);
-		else
-			((SplittableSet<T>) subList.structure).add(u);
+		subList.structure.add(u);
 	}
 
-	@SuppressWarnings("unchecked")
 	private boolean promoteOrInsert(T u, SubList<T> startPartition, String startPartitionId, int x,
 			int height)
 	{
@@ -149,18 +142,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		if (promote)
 		{
 			SubList<T> newPartition = new SubList<T>(partitionImplementation);
-			if (isListPartitions)
-			{
-				int transfers = (int) (startPartition.size() - x);
-				for (int y = 0; y < transfers; y++)
-				{
-
-					((List<T>) newPartition.structure).add(0, ((List<T>) startPartition.structure)
-							.remove((int) startPartition.size() - 1));
-
-				}
-			} else
-				newPartition.structure = ((SplittableSet<T>) startPartition.structure).split(u);
+			newPartition.structure = startPartition.structure.split(u);
 			String newPartitionId = u.toString() + "-" + height;
 
 			listCache.register(newPartitionId, newPartition);
@@ -181,7 +163,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		return false;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public boolean remove(T x)
 	{
@@ -190,10 +171,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		{
 			ListLayerEntry deepestLayerFind = findPath.get(0);
 			SubList<T> subList = listCache.get(deepestLayerFind.listPartitionKey);
-			if (isListPartitions)
-				((List<T>) subList.structure).remove(deepestLayerFind.index);
-			else
-				((SplittableSet<T>) subList.structure).remove(x);
+			subList.structure.remove(x);
 
 			int deletionHeight = maxHeight - findPath.size();
 			for (int y = deletionHeight; y >= 1; y--)
@@ -201,12 +179,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 				String deletingPartitionId = x.toString() + "-" + y;
 				SubList<T> toBeMovedPartition = listCache.get(deletingPartitionId);
 				SubList<T> destinationPartition = listCache.get(toBeMovedPartition.prevPartitionId);
-				if (isListPartitions)
-					((List<T>) destinationPartition.structure)
-							.addAll((List<T>) toBeMovedPartition.structure);
-				else
-					((SplittableSet<T>) destinationPartition.structure)
-							.merge((SplittableSet<T>) toBeMovedPartition.structure);
+				destinationPartition.structure.merge(toBeMovedPartition.structure);
 				destinationPartition.nextPartitionId = toBeMovedPartition.nextPartitionId;
 				if (toBeMovedPartition.nextPartitionId != null)
 				{
@@ -269,39 +242,19 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 					nextParentKey = startPartition.nextPartitionId.substring(0,
 							startPartition.nextPartitionId.lastIndexOf("-"));
 
-				if (isListPartitions)
+				if (startPartition.nextPartitionId == null
+						|| comparableConstructor.newInstance(nextParentKey).compareTo(u) > 0)
 				{
-					List<T> list = (List<T>) startPartition.structure;
-					for (x = 0; x < list.size(); x++)
+					floorVal = startPartition.structure.floor(u);
+					x = 0;
+					if (u.equals(floorVal))
 					{
-						int compare = u.compareTo(list.get(x));
-						if (compare < 0)
-							break;
-						else if (compare == 0)
-						{
-							if (layerTraversalPath != null)
-								layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height,
-										x));
-							return true;
-						}
+						if (layerTraversalPath != null)
+							layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height, x));
+						return true;
 					}
 				} else
-				{
-					if (startPartition.nextPartitionId == null
-							|| comparableConstructor.newInstance(nextParentKey).compareTo(u) > 0)
-					{
-						floorVal = ((SplittableSet<T>) startPartition.structure).floor(u);
-						x = 0;
-						if (u.equals(floorVal))
-						{
-							if (layerTraversalPath != null)
-								layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height,
-										x));
-							return true;
-						}
-					} else
-						x = (int) startPartition.size();
-				}
+					x = (int) startPartition.size();
 
 				if (x >= startPartition.size() && startPartition.nextPartitionId != null)
 				{
@@ -411,7 +364,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			}
 		}
 
-		@SuppressWarnings("unchecked")
 		public EMSkipIterator(T startValue, T endValue)
 		{
 			this.endValue = endValue;
@@ -423,14 +375,8 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			{
 				SubList<T> list = listCache.get(entry.listPartitionKey);
 
-				LowestSubListEntry newSubListEntry;
-				if (isListPartitions)
-					newSubListEntry = new LowestSubListEntry(list, ((List<T>) list.structure)
-							.subList(entry.index, (int) list.size()).iterator(), null);
-				else
-					newSubListEntry = new LowestSubListEntry(list,
-							((SplittableSet<T>) list.structure).iterator(startValue, endValue),
-							null);
+				LowestSubListEntry newSubListEntry = new LowestSubListEntry(list,
+						list.structure.iterator(startValue, endValue), null);
 				if (getNextEntry(newSubListEntry))
 					nextSmallestEntryQueue.add(newSubListEntry);
 			}

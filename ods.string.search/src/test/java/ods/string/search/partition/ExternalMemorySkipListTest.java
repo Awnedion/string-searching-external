@@ -18,7 +18,7 @@ public class ExternalMemorySkipListTest
 	public void testAddSearchRemoveEMSkipListSet()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1 / 35., 1000000000, Treap.class);
+				"target/treap"), 1 / 35., 1000000000, new Treap<String>());
 		ExternalMemorySplittableSetTest.testOperations(tree);
 	}
 
@@ -35,7 +35,7 @@ public class ExternalMemorySkipListTest
 	public void testIteratorAllSet()
 	{
 		ExternalMemorySkipList<Integer> tree = new ExternalMemorySkipList<Integer>(new File(
-				"target/treap"), 1 / 35., 1000000000, Treap.class);
+				"target/treap"), 1 / 35., 1000000000, new Treap<Integer>());
 		ExternalMemorySplittableSetTest.testFullIterator(tree);
 	}
 
@@ -51,7 +51,7 @@ public class ExternalMemorySkipListTest
 	public void testIteratorRangeSet()
 	{
 		ExternalMemorySkipList<Integer> tree = new ExternalMemorySkipList<Integer>(new File(
-				"target/treap"), 1 / 35., 1000000000, Treap.class);
+				"target/treap"), 1 / 35., 1000000000, new Treap<Integer>());
 		ExternalMemorySplittableSetTest.testRangeIterators(tree);
 	}
 
@@ -67,7 +67,7 @@ public class ExternalMemorySkipListTest
 	public void testIteratorPrefixSet()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1 / 35., 1000000000, Treap.class);
+				"target/treap"), 1 / 35., 1000000000, new Treap<String>());
 		ExternalMemorySplittableSetTest.testPrefixIterators(tree);
 	}
 }

@@ -1,6 +1,10 @@
 package ods.string.search.partition;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -10,22 +14,55 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 {
 	private static final long serialVersionUID = -5606125403006815540L;
 
-	private ExternalizableLinkedList<T> linkedList;
+	private ExternalMemoryList<T> linkedList;
+	private boolean linearCompare;
+	private transient Constructor<ExternalMemoryList<T>> copyConstructor;
 
 	public ExternalizableLinkedListSet()
 	{
 		linkedList = new ExternalizableLinkedList<T>();
+		linearCompare = false;
+		init();
 	}
 
-	public ExternalizableLinkedListSet(ExternalizableLinkedList<T> list)
+	@SuppressWarnings("unchecked")
+	public ExternalizableLinkedListSet(ExternalizableLinkedListSet<T> template)
+	{
+		try
+		{
+			linkedList = (ExternalMemoryList<T>) template.linkedList.getClass().newInstance();
+		} catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+		linearCompare = template.linearCompare;
+		init();
+	}
+
+	public ExternalizableLinkedListSet(ExternalMemoryList<T> list, boolean linearCompare)
 	{
 		linkedList = list;
+		this.linearCompare = linearCompare;
+		init();
+	}
+
+	@SuppressWarnings("unchecked")
+	private void init()
+	{
+		try
+		{
+			copyConstructor = (Constructor<ExternalMemoryList<T>>) linkedList.getClass()
+					.getConstructor(Collection.class);
+		} catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public boolean remove(T x)
 	{
-		int index = Collections.binarySearch(linkedList, x);
+		int index = findIndex(x);
 		if (index >= 0)
 			linkedList.remove(index);
 		else
@@ -33,32 +70,68 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 		return true;
 	}
 
+	private int findIndex(T val)
+	{
+		int index;
+		if (!linearCompare)
+			index = Collections.binarySearch(linkedList, val);
+		else
+			index = linearFind(val);
+		return index;
+	}
+
+	private int linearFind(T val)
+	{
+		int result = 0;
+		Iterator<T> iter = linkedList.iterator();
+		while (iter.hasNext())
+		{
+			int compare = val.compareTo(iter.next());
+			if (compare == 0)
+				return result;
+			else if (compare < 0)
+				break;
+			result++;
+		}
+		result = -result - 1;
+		return result;
+	}
+
 	@Override
 	public boolean contains(T x)
 	{
-		int index = Collections.binarySearch(linkedList, x);
+		int index = findIndex(x);
 		return index >= 0;
 	}
 
 	@Override
 	public Iterator<T> iterator(T from, T to)
 	{
-		int fromIndex = Collections.binarySearch(linkedList, from);
+		int fromIndex = findIndex(from);
 		if (fromIndex < 0)
 			fromIndex = Math.abs(fromIndex) - 1;
-		int toIndex = Collections.binarySearch(linkedList, to);
+		int toIndex = findIndex(to);
 		if (toIndex < 0)
-			toIndex = Math.abs(Collections.binarySearch(linkedList, to)) - 1;
+			toIndex = Math.abs(toIndex) - 1;
 		return linkedList.subList(fromIndex, toIndex).iterator();
 	}
 
 	@Override
 	public SplittableSet<T> split(T x)
 	{
-		int splitIndex = Math.abs(Collections.binarySearch(linkedList, x));
+		int splitIndex = findIndex(x);
+		if (splitIndex < 0)
+			splitIndex = Math.abs(splitIndex) - 1;
 		List<T> suffixList = linkedList.subList(splitIndex, linkedList.size());
-		ExternalizableLinkedListSet<T> result = new ExternalizableLinkedListSet<T>(
-				new ExternalizableLinkedList<T>(suffixList));
+		ExternalizableLinkedListSet<T> result;
+		try
+		{
+			result = new ExternalizableLinkedListSet<T>(copyConstructor.newInstance(suffixList),
+					linearCompare);
+		} catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
 
 		int elementsToRemove = suffixList.size();
 		for (int y = 0; y < elementsToRemove; y++)
@@ -69,8 +142,13 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 	@Override
 	public boolean merge(SplittableSet<T> t)
 	{
+		if (t.size() == 0)
+			return true;
+
 		ExternalizableLinkedListSet<T> higherSet = (ExternalizableLinkedListSet<T>) t;
-		if (higherSet.linkedList.getFirst().compareTo(linkedList.getLast()) < 0)
+		int thisSize = linkedList.size();
+		if (thisSize != 0
+				&& higherSet.linkedList.get(0).compareTo(linkedList.get(thisSize - 1)) < 0)
 			throw new IllegalArgumentException(
 					"The passed in set must contain elements of greater value.");
 
@@ -90,10 +168,10 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 	@Override
 	public T floor(T val)
 	{
-		int index = Collections.binarySearch(linkedList, val);
+		int index = findIndex(val);
 		if (index < 0)
-			index = Math.abs(index) - 1;
-		return linkedList.get(index);
+			index = Math.abs(index) - 2;
+		return index < 0 ? null : linkedList.get(index);
 	}
 
 	@Override
@@ -111,7 +189,7 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 	@Override
 	public boolean add(T u)
 	{
-		int index = Collections.binarySearch(linkedList, u);
+		int index = findIndex(u);
 		if (index >= 0)
 			return false;
 		linkedList.add(Math.abs(index) - 1, u);
@@ -128,5 +206,12 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 	public Iterator<T> iterator()
 	{
 		return linkedList.iterator();
+	}
+
+	private void readObject(ObjectInputStream inputStream) throws IOException,
+			ClassNotFoundException
+	{
+		inputStream.defaultReadObject();
+		init();
 	}
 }

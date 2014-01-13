@@ -26,21 +26,12 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		uniqueId++;
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public ExternalMemorySplittableSet(File storageDirectory, int maxSetSize, long maxInMemoryBytes,
-			Class<? extends SplittableSet> nodeType)
+	public ExternalMemorySplittableSet(File storageDirectory, int maxSetSize,
+			long maxInMemoryBytes, SplittableSet<T> root)
 	{
 		this.maxSetSize = maxSetSize;
 		setCache = new ExternalMemoryObjectCache<SplittableSet<T>>(storageDirectory,
 				maxInMemoryBytes, true);
-		SplittableSet<T> root;
-		try
-		{
-			root = nodeType.newInstance();
-		} catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
 		setCache.register(uniqueId + "", root);
 		uniqueId++;
 	}
@@ -56,9 +47,6 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 			T midValue = curSet.locateMiddleValue();
 			partitionRanges.put(midValue, uniqueId + "");
 			SplittableSet<T> newSet = curSet.split(midValue);
-			if (maxSetSize > 1000)
-				System.out.println("Set Split Performed: " + curSet.size() + " "
-						+ newSet.size());
 			setCache.register(uniqueId + "", newSet);
 			uniqueId++;
 		}
@@ -109,8 +97,7 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 					partitionRanges.remove(smallEntry.getKey());
 				}
 
-				System.out.println("Set Merge performed: " + curSet.size() + " "
-						+ mergeSet.size());
+				System.out.println("Set Merge performed: " + curSet.size() + " " + mergeSet.size());
 			}
 		}
 		return result;
