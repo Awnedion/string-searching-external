@@ -44,6 +44,11 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 			previousByteSize = data.getByteSize() + BASE_CACHED_BLOCK_BYTE_SIZE;
 			inMemoryByteEstimate += previousByteSize;
 		}
+
+		public String toString()
+		{
+			return data + "";
+		}
 	}
 
 	private long inMemoryByteEstimate = 0;

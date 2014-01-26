@@ -1,6 +1,7 @@
 package ods.string.search.partition;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.Random;
 import java.util.TreeSet;
 
 import ods.string.search.partition.BinaryPatriciaTrie.Node;
+import ods.string.search.partition.BinaryPatriciaTrie.SearchPoint;
 
 import org.junit.Test;
 
@@ -65,6 +67,8 @@ public class BinaryPatriciaTrieTest
 			assertEquals(tree.size(), trie.n);
 		}
 
+		verifyTrieNodeCompression(trie);
+
 		for (String s : tree)
 		{
 			assertTrue(trie.contains(s));
@@ -89,7 +93,11 @@ public class BinaryPatriciaTrieTest
 		while (!nodes.isEmpty())
 		{
 			Node n = nodes.remove(nodes.size() - 1);
-			assertTrue(n.bitsUsed == 0 || n.leftChild != null && n.rightChild != null || n.valueEnd);
+			assertTrue(n.bitsUsed == 0 || n.subtreeSize == 0 || n.leftChild != null
+					&& n.rightChild != null || n.valueEnd);
+			if (n.subtreeSize != 0)
+				assertEquals(1 + (n.leftChild != null ? n.leftChild.subtreeSize : 0)
+						+ (n.rightChild != null ? n.rightChild.subtreeSize : 0), n.subtreeSize);
 			if (n.leftChild != null)
 				nodes.add(n.leftChild);
 			if (n.rightChild != null)
@@ -326,5 +334,49 @@ public class BinaryPatriciaTrieTest
 			count++;
 		}
 		assertEquals(tree.size(), count);
+	}
+
+	@Test
+	public void testSplit()
+	{
+		Random rand = new Random();
+		BinaryPatriciaTrie<String> trie = new BinaryPatriciaTrie<String>();
+		HashSet<String> tree = new HashSet<String>();
+		for (int x = 0; x < 10000; x++)
+		{
+			int inputLength = rand.nextInt(6) + 1;
+			String input = "";
+			for (int y = 0; y < inputLength; y++)
+				input += (char) (rand.nextInt(10) + '0');
+			boolean result = trie.add(input);
+			boolean treeResult = tree.add(input);
+			assertEquals(treeResult, result);
+		}
+
+		BinaryPatriciaTrie<String> partition = (BinaryPatriciaTrie<String>) trie.split("");
+		verifyTrieNodeCompression(trie);
+		verifyTrieNodeCompression(partition);
+
+		Iterator<SearchPoint> iter = trie.iterator(new byte[0]);
+		SearchPoint pointerNode = null;
+		while (iter.hasNext())
+		{
+			SearchPoint point = iter.next();
+			if (point.getLastMatchingNode().subtreeSize == 0)
+			{
+				pointerNode = point;
+				break;
+			}
+		}
+		assertNotNull(pointerNode);
+
+		iter = partition.iterator(new byte[0]);
+		while (iter.hasNext())
+		{
+			SearchPoint point = iter.next();
+			assertTrue(point.leftOver.bitsUsed % 8 == 0);
+			for (int x = 0; x < point.leftOver.bitsUsed / 8; x++)
+				assertTrue(point.leftOver.label[x] >= '0' && point.leftOver.label[x] <= '9');
+		}
 	}
 }

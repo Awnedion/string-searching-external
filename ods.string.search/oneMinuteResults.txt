@@ -439,3 +439,49 @@ testSequentialAddSkipListArrayListBinarySearch()
 12000000 prefix search operations, 12000000 elements returned, performed in 45852ms
 15758429 prefix search operations, 15758429 elements returned, performed in 60000ms
 
+
+
+testRandomAddExternalTrie()
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				125, 50000000l);
+		fillTreeRandomly(tree, 60000, 100000);
+100000 insert operations, 73168 size tree, created in 1246ms
+200000 insert operations, 141132 size tree, created in 2429ms
+300000 insert operations, 207251 size tree, created in 3668ms
+400000 insert operations, 272156 size tree, created in 4952ms
+500000 insert operations, 336165 size tree, created in 6242ms
+600000 insert operations, 399495 size tree, created in 11281ms
+700000 insert operations, 462339 size tree, created in 25701ms
+800000 insert operations, 524794 size tree, created in 51467ms
+824486 insert operations, 539858 size tree, created in 60000ms
+0 find operations, performed in 0ms
+100000 find operations, performed in 13607ms
+200000 find operations, performed in 24554ms
+300000 find operations, performed in 34154ms
+400000 find operations, performed in 44191ms
+500000 find operations, performed in 53624ms
+568874 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+100000 prefix search operations, 7597 elements returned, performed in 14021ms
+200000 prefix search operations, 15279 elements returned, performed in 27990ms
+300000 prefix search operations, 22643 elements returned, performed in 41877ms
+400000 prefix search operations, 30212 elements returned, performed in 55696ms
+431285 prefix search operations, 32582 elements returned, performed in 60000ms
+
+
+
+testSequentialAddExternalTrie()
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				6000, 50000000l);
+		fillTreeSequentially(tree, 60000, 2000000);
+2000000 insert operations, 2000000 size tree, created in 15630ms
+4000000 insert operations, 4000000 size tree, created in 33498ms
+6000000 insert operations, 6000000 size tree, created in 52185ms
+6822057 insert operations, 6822057 size tree, created in 60000ms
+0 find operations, performed in 0ms
+2000000 find operations, performed in 35677ms
+3445001 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+2000000 prefix search operations, 2000000 elements returned, performed in 51519ms
+2318114 prefix search operations, 2318114 elements returned, performed in 60000ms
+

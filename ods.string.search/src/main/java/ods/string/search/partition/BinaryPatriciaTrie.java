@@ -1,5 +1,7 @@
 package ods.string.search.partition;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -20,6 +22,11 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 {
 	private static final long serialVersionUID = -766158369075318012L;
 
+	/**
+	 * 16 base + 32 non-labels + 32 label array
+	 */
+	private static final int BYTES_PER_NODE = 80;
+
 	protected static class Node implements Serializable
 	{
 		private static final long serialVersionUID = 4014282151450729129L;
@@ -30,6 +37,8 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		byte[] label;
 
 		int bitsUsed;
+
+		int subtreeSize;
 
 		/**
 		 * If true, this node represents a complete string stored in the trie and not just a prefix.
@@ -55,6 +64,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			this.label = label;
 			bitsUsed = matchingBits;
 			valueEnd = false;
+			subtreeSize = 1;
 		}
 
 		public String toString()
@@ -81,6 +91,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	{
 		public ArrayList<Node> lastMatchingNode;
 		public Node leftOver;
+		public int bitsMatched;
 
 		public SearchPoint(Node n, byte[] s)
 		{
@@ -107,6 +118,43 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		byte[] getBytes(Object val);
 
 		Object readFromBytes(byte[] bytes);
+	}
+
+	private static class StringConversion implements ByteArrayConversion, Serializable
+	{
+		private static final long serialVersionUID = -4297528634952085522L;
+
+		@Override
+		public byte[] getBytes(Object val)
+		{
+			return ((String) val).getBytes();
+		}
+
+		@Override
+		public Object readFromBytes(byte[] bytes)
+		{
+			return new String(bytes).trim();
+		}
+	}
+
+	private static class IntegerConversion implements ByteArrayConversion, Serializable
+	{
+		private static final long serialVersionUID = -2746654070188456294L;
+
+		@Override
+		public byte[] getBytes(Object val)
+		{
+			ByteBuffer result = ByteBuffer.allocate(4);
+			result.putInt((int) val);
+			return result.array();
+		}
+
+		@Override
+		public Object readFromBytes(byte[] bytes)
+		{
+			ByteBuffer result = ByteBuffer.wrap(bytes);
+			return result.getInt();
+		}
 	}
 
 	public static void splitOnPrefix(Node prefixNode, Node suffixNode)
@@ -196,7 +244,12 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	 */
 	protected Node r;
 
-	private ByteArrayConversion converter;
+	protected ByteArrayConversion converter;
+
+	private transient boolean dirty = true;
+	private long dataBytesEstimate = 0;
+
+	protected Node childTrieLabel;
 
 	public BinaryPatriciaTrie()
 	{
@@ -216,10 +269,20 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		if (x == null)
 			throw new IllegalArgumentException("The trie doesn't store null values.");
 
-		initByteConverterIfNecessary(x);
+		byte[] bytesToAdd = convertToBytes(x);
+		int result = add(bytesToAdd);
+		if (result == 0)
+			return true;
+		return false;
+	}
 
-		byte[] bytesToAdd = converter.getBytes(x);
+	public int add(byte[] bytesToAdd)
+	{
 		SearchPoint lastNode = findLastNode(bytesToAdd);
+		if (lastNode.getLastMatchingNode().subtreeSize == 0)
+			return lastNode.bitsMatched;
+
+		dataBytesEstimate += Math.ceil(lastNode.leftOver.bitsUsed / 8.);
 		if (lastNode.leftOver.bitsUsed > 0)
 		{
 			boolean goRight = (lastNode.leftOver.label[0] & 0x80) != 0;
@@ -234,6 +297,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 					lastNode.getLastMatchingNode().rightChild = newNode;
 				else
 					lastNode.getLastMatchingNode().leftChild = newNode;
+				incrementNodesToRoot(lastNode, 1);
 			} else
 			{
 
@@ -245,6 +309,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				byte[] oldLabel = existingEdge.label;
 				Node internalNode = new Node(Arrays.copyOf(oldLabel,
 						(int) Math.ceil((double) matchingBits / 8)), matchingBits);
+				internalNode.subtreeSize = existingEdge.subtreeSize + 1;
 
 				splitOnPrefix(internalNode, lastNode.leftOver);
 				splitOnPrefix(internalNode, existingEdge);
@@ -265,6 +330,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 						internalNode.leftChild = leafNode;
 					else
 						internalNode.rightChild = leafNode;
+					internalNode.subtreeSize++;
 				} else
 				{
 					// The new string is a prefix of the existing label.
@@ -275,56 +341,37 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 					lastNode.getLastMatchingNode().rightChild = internalNode;
 				else
 					lastNode.getLastMatchingNode().leftChild = internalNode;
+				incrementNodesToRoot(lastNode, internalNode.subtreeSize - existingEdge.subtreeSize);
 			}
 			n++;
-			return true;
+			dirty = true;
+			return 0;
 		} else if (!lastNode.getLastMatchingNode().valueEnd)
 		{
 			n++;
 			lastNode.getLastMatchingNode().valueEnd = true;
-			return true;
+			dirty = true;
+			return 0;
 		}
-		return false;
+		return -1;
 	}
 
-	private void initByteConverterIfNecessary(T x)
+	private void incrementNodesToRoot(SearchPoint lastNode, int increment)
+	{
+		for (Node pathNode : lastNode.lastMatchingNode)
+			pathNode.subtreeSize += increment;
+	}
+
+	public byte[] convertToBytes(T x)
 	{
 		if (converter == null)
 		{
 			if (x instanceof String)
-				converter = new ByteArrayConversion()
-				{
-					@Override
-					public byte[] getBytes(Object val)
-					{
-						return ((String) val).getBytes();
-					}
-
-					@Override
-					public Object readFromBytes(byte[] bytes)
-					{
-						return new String(bytes).trim();
-					}
-				};
+				converter = new StringConversion();
 			else if (x instanceof Integer)
-				converter = new ByteArrayConversion()
-				{
-					@Override
-					public byte[] getBytes(Object val)
-					{
-						ByteBuffer result = ByteBuffer.allocate(4);
-						result.putInt((int) val);
-						return result.array();
-					}
-
-					@Override
-					public Object readFromBytes(byte[] bytes)
-					{
-						ByteBuffer result = ByteBuffer.wrap(bytes);
-						return result.getInt();
-					}
-				};
+				converter = new IntegerConversion();
 		}
+		return converter.getBytes(x);
 	}
 
 	/**
@@ -337,8 +384,18 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	 */
 	private SearchPoint findLastNode(byte[] s)
 	{
-		SearchPoint result = new SearchPoint(r, s);
-		while (result.leftOver.bitsUsed > 0)
+		SearchPoint result = new SearchPoint(r, Arrays.copyOf(s, s.length));
+		if (r.bitsUsed != 0)
+		{
+			if (getCommonPrefixBits(r, result.leftOver) == r.bitsUsed)
+			{
+				splitOnPrefix(r, result.leftOver);
+				result.bitsMatched += r.bitsUsed;
+			} else
+				result.leftOver = new Node(new byte[0]);
+		}
+
+		while (result.leftOver.bitsUsed > 0 && result.getLastMatchingNode().subtreeSize != 0)
 		{
 			Node selectedEdge;
 			if ((result.leftOver.label[0] & 0x80) != 0)
@@ -357,6 +414,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			else
 				break;
 
+			result.bitsMatched += selectedEdge.bitsUsed;
 			result.lastMatchingNode.add(selectedEdge);
 		}
 
@@ -375,29 +433,37 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		if (x == null)
 			throw new IllegalArgumentException("The trie doesn't store null values.");
 
-		initByteConverterIfNecessary(x);
+		byte[] bytesToRemove = convertToBytes(x);
+		return remove(bytesToRemove) == 0;
+	}
 
-		byte[] bytesToRemove = converter.getBytes(x);
-
+	public int remove(byte[] bytesToRemove)
+	{
 		// Find the parent node of the node to be deleted.
 		SearchPoint result = findLastNode(bytesToRemove);
+		if (result.getLastMatchingNode().subtreeSize == 0)
+			return result.bitsMatched;
+
 		if (result.leftOver.bitsUsed != 0)
-			return false;
+			return -1;
 
 		Node parentNode = null;
 		if (result.lastMatchingNode.size() > 1)
 			parentNode = result.lastMatchingNode.get(result.lastMatchingNode.size() - 2);
 		Node deleteNode = result.getLastMatchingNode();
 		if (!deleteNode.valueEnd)
-			return false;
+			return -1;
 
 		if (deleteNode.leftChild == null && deleteNode.rightChild == null)
 		{
+			dataBytesEstimate -= Math.ceil(deleteNode.bitsUsed / 8.);
 			// Remove the link from the parent node to the deleted node.
 			if (parentNode.leftChild == deleteNode)
 				parentNode.leftChild = null;
 			else
 				parentNode.rightChild = null;
+
+			result.lastMatchingNode.remove(result.lastMatchingNode.size() - 1);
 			if (parentNode != r && !parentNode.valueEnd)
 			{
 				/*
@@ -405,19 +471,27 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				 * now.
 				 */
 				Node parentParentNode = result.lastMatchingNode
-						.get(result.lastMatchingNode.size() - 3);
+						.get(result.lastMatchingNode.size() - 2);
 				compressNode(parentParentNode, parentNode);
-			}
+				result.lastMatchingNode.remove(result.lastMatchingNode.size() - 1);
+				incrementNodesToRoot(result, -2);
+			} else
+				incrementNodesToRoot(result, -1);
 		} else
 		{
 			// The node has childen so it can't be removed. It may be compressable though.
 			deleteNode.valueEnd = false;
-			if (deleteNode.leftChild == null || deleteNode.rightChild == null)
+			if (deleteNode != r && (deleteNode.leftChild == null || deleteNode.rightChild == null))
+			{
 				compressNode(parentNode, deleteNode);
+				result.lastMatchingNode.remove(result.lastMatchingNode.size() - 1);
+				incrementNodesToRoot(result, -1);
+			}
 		}
 
 		n--;
-		return true;
+		dirty = true;
+		return 0;
 	}
 
 	/**
@@ -456,27 +530,31 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		if (x == null)
 			throw new IllegalArgumentException("The trie doesn't store null values.");
 
-		initByteConverterIfNecessary(x);
+		byte[] bytesToFind = convertToBytes(x);
+		return contains(bytesToFind) == 0;
+	}
 
-		byte[] bytesToFind = converter.getBytes(x);
+	public int contains(byte[] bytesToFind)
+	{
 		SearchPoint result = findLastNode(bytesToFind);
+		if (result.getLastMatchingNode().subtreeSize == 0)
+			return result.bitsMatched;
+
 		if (result.leftOver.bitsUsed == 0 && result.getLastMatchingNode().valueEnd)
-			return true;
-		return false;
+			return 0;
+		return -1;
 	}
 
 	@Override
 	public long getByteSize()
 	{
-		// TODO Auto-generated method stub
-		return 0;
+		return dataBytesEstimate + r.subtreeSize * BYTES_PER_NODE;
 	}
 
 	@Override
 	public boolean isDirty()
 	{
-		// TODO Auto-generated method stub
-		return false;
+		return dirty;
 	}
 
 	@Override
@@ -485,12 +563,12 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		return n;
 	}
 
-	protected class TrieIterator implements Iterator<T>
+	protected abstract class TrieIteratorParent
 	{
 		private ArrayList<SearchPoint> uncheckNodes = new ArrayList<SearchPoint>();
-		private T nextResult;
+		private Object nextResult;
 
-		public TrieIterator(byte[] prefix)
+		public TrieIteratorParent(byte[] prefix)
 		{
 			SearchPoint result = findLastNode(prefix);
 			Node matchedBits = new Node(new byte[prefix.length], 0);
@@ -498,7 +576,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				appendOnNode(matchedBits, n);
 
 			Node traverseEdge;
-			if (result.leftOver.bitsUsed > 0)
+			if (result.leftOver.bitsUsed > 0 && result.getLastMatchingNode().subtreeSize != 0)
 			{
 				if ((result.leftOver.label[0] & 0x80) != 0)
 					traverseEdge = result.getLastMatchingNode().rightChild;
@@ -517,7 +595,6 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			uncheckNodes.add(new SearchPoint(result.getLastMatchingNode(), matchedBits));
 		}
 
-		@SuppressWarnings("unchecked")
 		public boolean hasNext()
 		{
 			if (nextResult != null)
@@ -527,15 +604,16 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			{
 				SearchPoint result = uncheckNodes.remove(uncheckNodes.size() - 1);
 
-				Node leftChild = result.getLastMatchingNode().leftChild;
-				generateSearchNode(result, uncheckNodes, leftChild);
-
 				Node rightChild = result.getLastMatchingNode().rightChild;
 				generateSearchNode(result, uncheckNodes, rightChild);
 
-				if (result.getLastMatchingNode().valueEnd)
+				Node leftChild = result.getLastMatchingNode().leftChild;
+				generateSearchNode(result, uncheckNodes, leftChild);
+
+				if (result.getLastMatchingNode().valueEnd
+						|| result.getLastMatchingNode().subtreeSize == 0)
 				{
-					nextResult = (T) converter.readFromBytes(result.leftOver.label);
+					nextResult = getNextReturnResult(result);
 					return true;
 				}
 			}
@@ -543,10 +621,12 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			return false;
 		}
 
-		public T next()
+		protected abstract Object getNextReturnResult(SearchPoint result);
+
+		protected Object nextObject()
 		{
 			hasNext();
-			T result = nextResult;
+			Object result = nextResult;
 			nextResult = null;
 			return result;
 		}
@@ -570,16 +650,55 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		}
 	}
 
+	protected class TrieIterator extends TrieIteratorParent implements Iterator<T>
+	{
+
+		public TrieIterator(byte[] prefix)
+		{
+			super(prefix);
+		}
+
+		protected Object getNextReturnResult(SearchPoint result)
+		{
+			return converter.readFromBytes(result.leftOver.label);
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public T next()
+		{
+			return (T) nextObject();
+		}
+	}
+
+	protected class TrieIteratorSearchPoints extends TrieIteratorParent implements
+			Iterator<SearchPoint>
+	{
+
+		public TrieIteratorSearchPoints(byte[] prefix)
+		{
+			super(prefix);
+		}
+
+		protected Object getNextReturnResult(SearchPoint result)
+		{
+			return result;
+		}
+
+		@Override
+		public SearchPoint next()
+		{
+			return (SearchPoint) nextObject();
+		}
+	}
+
 	@Override
 	public Iterator<T> iterator(T from, T to)
 	{
 		if (from == null)
 			throw new IllegalArgumentException("The trie doesn't store null values.");
 
-		// Find the first node that matches the entire prefix.
-		initByteConverterIfNecessary(from);
-		byte[] bytesToFind = converter.getBytes(from);
-
+		byte[] bytesToFind = convertToBytes(from);
 		return new TrieIterator(bytesToFind);
 	}
 
@@ -589,31 +708,126 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		return new TrieIterator(new byte[0]);
 	}
 
+	public Iterator<SearchPoint> iterator(byte[] prefix)
+	{
+		if (prefix == null)
+			throw new IllegalArgumentException("The trie doesn't store null values.");
+
+		return new TrieIteratorSearchPoints(prefix);
+	}
+
 	@Override
 	public SplittableSet<T> split(T x)
 	{
-		// TODO
-		return null;
+		BinaryPatriciaTrie<T> result = new BinaryPatriciaTrie<T>();
+		result.converter = converter;
+
+		int lowerBoundSize = r.subtreeSize / 3;
+		int upperBoundSize = lowerBoundSize * 2;
+
+		ArrayList<Node> parents = new ArrayList<Node>();
+		Node curNode = r;
+		Node matchedLabel = new Node(new byte[0]);
+		while (curNode != null)
+		{
+			if (curNode.bitsUsed > 0)
+				appendOnNode(matchedLabel, curNode);
+
+			parents.add(curNode);
+			if (curNode.leftChild != null && curNode.leftChild.subtreeSize >= lowerBoundSize
+					&& curNode.leftChild.subtreeSize <= upperBoundSize)
+			{
+				appendOnNode(matchedLabel, curNode.leftChild);
+				Node pointerNode = new Node(Arrays.copyOf(curNode.leftChild.label,
+						curNode.leftChild.label.length), curNode.leftChild.bitsUsed);
+				pointerNode.subtreeSize = 0;
+				result.r = curNode.leftChild;
+				curNode.leftChild = pointerNode;
+				break;
+			} else if (curNode.rightChild != null
+					&& curNode.rightChild.subtreeSize >= lowerBoundSize
+					&& curNode.rightChild.subtreeSize <= upperBoundSize)
+			{
+				appendOnNode(matchedLabel, curNode.rightChild);
+				Node pointerNode = new Node(Arrays.copyOf(curNode.rightChild.label,
+						curNode.rightChild.label.length), curNode.rightChild.bitsUsed);
+				pointerNode.subtreeSize = 0;
+				result.r = curNode.rightChild;
+				curNode.rightChild = pointerNode;
+				break;
+			} else
+			{
+				if (curNode.rightChild == null || curNode.leftChild != null
+						&& curNode.leftChild.subtreeSize > curNode.rightChild.subtreeSize)
+					curNode = curNode.leftChild;
+				else
+					curNode = curNode.rightChild;
+			}
+		}
+
+		result.dataBytesEstimate = dataBytesEstimate * result.r.subtreeSize / r.subtreeSize;
+		dataBytesEstimate -= result.dataBytesEstimate;
+		for (Node n : parents)
+			n.subtreeSize -= result.r.subtreeSize;
+		result.r.bitsUsed = matchedLabel.bitsUsed;
+		result.r.label = Arrays.copyOf(matchedLabel.label, matchedLabel.label.length);
+		childTrieLabel = matchedLabel;
+		dirty = true;
+
+		return result;
 	}
 
 	@Override
 	public boolean merge(SplittableSet<T> t)
 	{
-		// TODO Auto-generated method stub
-		return false;
+		if (childTrieLabel == null)
+			return false;
+
+		BinaryPatriciaTrie<T> childTrie = (BinaryPatriciaTrie<T>) t;
+		SearchPoint pointer = findLastNode(childTrieLabel.label);
+		Node parentOfPointer = pointer.lastMatchingNode.get(pointer.lastMatchingNode.size() - 2);
+		if (parentOfPointer.leftChild == pointer.getLastMatchingNode())
+			parentOfPointer.leftChild = childTrie.r;
+		else
+			parentOfPointer.rightChild = childTrie.r;
+		splitOnPrefix(parentOfPointer, childTrie.r);
+		childTrieLabel = childTrie.childTrieLabel;
+		n += childTrie.n;
+		dataBytesEstimate += childTrie.dataBytesEstimate;
+
+		pointer.lastMatchingNode.remove(pointer.lastMatchingNode.size() - 1);
+		incrementNodesToRoot(pointer, childTrie.r.subtreeSize);
+		dirty = true;
+
+		return true;
 	}
 
 	@Override
 	public T locateMiddleValue()
 	{
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public T floor(T val)
 	{
-		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public String toString()
+	{
+		String result = "";
+		Iterator<T> vals = iterator();
+		while (vals.hasNext())
+			result += " " + vals.next();
+
+		return result;
+	}
+
+	private void readObject(ObjectInputStream inputStream) throws IOException,
+			ClassNotFoundException
+	{
+		inputStream.defaultReadObject();
+		dirty = false;
 	}
 }

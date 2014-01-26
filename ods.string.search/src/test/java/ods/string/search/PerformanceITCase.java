@@ -10,6 +10,7 @@ import ods.string.search.array.CentroidTree;
 import ods.string.search.array.VebIndexLayout;
 import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
+import ods.string.search.partition.ExternalMemoryTrie;
 import ods.string.search.partition.ExternalizableArrayList;
 import ods.string.search.partition.ExternalizableLinkedList;
 import ods.string.search.partition.ExternalizableLinkedListSet;
@@ -230,6 +231,22 @@ public class PerformanceITCase
 				"target/treap"), 1. / 3000., 50000000l, new ExternalizableLinkedListSet<String>(
 				new ExternalizableArrayList<String>(), false));
 		fillTreeSequentially(tree, 60000, 6000000);
+	}
+
+	@Test
+	public void testRandomAddExternalTrie()
+	{
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				125, 50000000l);
+		fillTreeRandomly(tree, 60000, 100000);
+	}
+
+	@Test
+	public void testSequentialAddExternalTrie()
+	{
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				6000, 50000000l);
+		fillTreeSequentially(tree, 60000, 2000000);
 	}
 
 	private void fillTreeRandomly(PrefixSearchableSet<String> tree, long timeLimit)
