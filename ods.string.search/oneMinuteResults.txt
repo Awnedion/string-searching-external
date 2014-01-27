@@ -441,47 +441,104 @@ testSequentialAddSkipListArrayListBinarySearch()
 
 
 
-testRandomAddExternalTrie()
+testRandomAddExternalTrieEvenSplits()
 		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
-				125, 50000000l);
+				75, 50000000l, 0);
 		fillTreeRandomly(tree, 60000, 100000);
-100000 insert operations, 73168 size tree, created in 1246ms
-200000 insert operations, 141132 size tree, created in 2429ms
-300000 insert operations, 207251 size tree, created in 3668ms
-400000 insert operations, 272156 size tree, created in 4952ms
-500000 insert operations, 336165 size tree, created in 6242ms
-600000 insert operations, 399495 size tree, created in 11281ms
-700000 insert operations, 462339 size tree, created in 25701ms
-800000 insert operations, 524794 size tree, created in 51467ms
-824486 insert operations, 539858 size tree, created in 60000ms
+100000 insert operations, 73168 size tree, created in 1278ms
+200000 insert operations, 141132 size tree, created in 2500ms
+300000 insert operations, 207251 size tree, created in 3751ms
+400000 insert operations, 272156 size tree, created in 5041ms
+500000 insert operations, 336165 size tree, created in 7319ms
+600000 insert operations, 399495 size tree, created in 18931ms
+700000 insert operations, 462339 size tree, created in 43785ms
+752292 insert operations, 495093 size tree, created in 60000ms
 0 find operations, performed in 0ms
-100000 find operations, performed in 13607ms
-200000 find operations, performed in 24554ms
-300000 find operations, performed in 34154ms
-400000 find operations, performed in 44191ms
-500000 find operations, performed in 53624ms
-568874 find operations, performed in 60000ms
+100000 find operations, performed in 12674ms
+200000 find operations, performed in 22451ms
+300000 find operations, performed in 33702ms
+400000 find operations, performed in 42050ms
+500000 find operations, performed in 50126ms
+600000 find operations, performed in 58084ms
+618365 find operations, performed in 60000ms
 0 prefix search operations, 0 elements returned, performed in 0ms
-100000 prefix search operations, 7597 elements returned, performed in 14021ms
-200000 prefix search operations, 15279 elements returned, performed in 27990ms
-300000 prefix search operations, 22643 elements returned, performed in 41877ms
-400000 prefix search operations, 30212 elements returned, performed in 55696ms
-431285 prefix search operations, 32582 elements returned, performed in 60000ms
+100000 prefix search operations, 6894 elements returned, performed in 11810ms
+200000 prefix search operations, 13927 elements returned, performed in 23363ms
+300000 prefix search operations, 20643 elements returned, performed in 35032ms
+400000 prefix search operations, 27539 elements returned, performed in 46681ms
+500000 prefix search operations, 34502 elements returned, performed in 58419ms
+514344 prefix search operations, 35476 elements returned, performed in 60000ms
 
 
 
-testSequentialAddExternalTrie()
+testRandomAddExternalTrieMinDepthSplits()
 		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
-				6000, 50000000l);
-		fillTreeSequentially(tree, 60000, 2000000);
-2000000 insert operations, 2000000 size tree, created in 15630ms
-4000000 insert operations, 4000000 size tree, created in 33498ms
-6000000 insert operations, 6000000 size tree, created in 52185ms
-6822057 insert operations, 6822057 size tree, created in 60000ms
+				75, 50000000l, 4);
+		fillTreeRandomly(tree, 60000, 100000);
+100000 insert operations, 73168 size tree, created in 1048ms
+200000 insert operations, 141132 size tree, created in 1993ms
+300000 insert operations, 207251 size tree, created in 2956ms
+400000 insert operations, 272156 size tree, created in 3927ms
+500000 insert operations, 336165 size tree, created in 6420ms
+600000 insert operations, 399495 size tree, created in 16873ms
+700000 insert operations, 462339 size tree, created in 38302ms
+772333 insert operations, 507558 size tree, created in 60000ms
 0 find operations, performed in 0ms
-2000000 find operations, performed in 35677ms
-3445001 find operations, performed in 60000ms
+100000 find operations, performed in 15028ms
+200000 find operations, performed in 23481ms
+300000 find operations, performed in 29903ms
+400000 find operations, performed in 36345ms
+500000 find operations, performed in 42509ms
+600000 find operations, performed in 48840ms
+700000 find operations, performed in 55076ms
+779428 find operations, performed in 60000ms
 0 prefix search operations, 0 elements returned, performed in 0ms
-2000000 prefix search operations, 2000000 elements returned, performed in 51519ms
-2318114 prefix search operations, 2318114 elements returned, performed in 60000ms
+100000 prefix search operations, 7103 elements returned, performed in 9694ms
+200000 prefix search operations, 14017 elements returned, performed in 19349ms
+300000 prefix search operations, 21136 elements returned, performed in 28786ms
+400000 prefix search operations, 28219 elements returned, performed in 38410ms
+500000 prefix search operations, 35149 elements returned, performed in 48034ms
+600000 prefix search operations, 42188 elements returned, performed in 57537ms
+625858 prefix search operations, 44010 elements returned, performed in 60000ms
+
+
+
+testSequentialAddExternalTrieEvenSplits()
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				6000, 50000000l, 0);
+		fillTreeSequentially(tree, 60000, 2000000);
+2000000 insert operations, 2000000 size tree, created in 9688ms
+4000000 insert operations, 4000000 size tree, created in 20451ms
+6000000 insert operations, 6000000 size tree, created in 31016ms
+8000000 insert operations, 8000000 size tree, created in 43470ms
+10000000 insert operations, 10000000 size tree, created in 56460ms
+10584974 insert operations, 10584974 size tree, created in 60000ms
+0 find operations, performed in 0ms
+2000000 find operations, performed in 20422ms
+4000000 find operations, performed in 40139ms
+6000000 find operations, performed in 59856ms
+6014001 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+2000000 prefix search operations, 2000000 elements returned, performed in 26736ms
+4000000 prefix search operations, 4000000 elements returned, performed in 53310ms
+4504286 prefix search operations, 4504286 elements returned, performed in 60000ms
+
+
+
+testSequentialAddExternalTrieMinDepthSplits()
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				6000, 50000000l, 4);
+		fillTreeSequentially(tree, 60000, 2000000);
+2000000 insert operations, 2000000 size tree, created in 11803ms
+4000000 insert operations, 4000000 size tree, created in 25507ms
+6000000 insert operations, 6000000 size tree, created in 39056ms
+8000000 insert operations, 8000000 size tree, created in 53775ms
+8965937 insert operations, 8965937 size tree, created in 60000ms
+0 find operations, performed in 0ms
+2000000 find operations, performed in 24298ms
+4000000 find operations, performed in 46303ms
+5238001 find operations, performed in 60000ms
+0 prefix search operations, 0 elements returned, performed in 0ms
+2000000 prefix search operations, 2000000 elements returned, performed in 33151ms
+3686189 prefix search operations, 3686189 elements returned, performed in 60000ms
 

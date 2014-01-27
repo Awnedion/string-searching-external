@@ -7,10 +7,18 @@ import org.junit.Test;
 public class ExternalMemoryTrieTest
 {
 	@Test
-	public void testAddSearchRemoveEMSkipList()
+	public void testAddSearchRemove()
 	{
 		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
-				50, 100000000);
+				50, 100000000, 0);
+		ExternalMemorySplittableSetTest.testOperations(tree);
+	}
+
+	@Test
+	public void testAddSearchRemoveMinDepth()
+	{
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				50, 100000000, 3);
 		ExternalMemorySplittableSetTest.testOperations(tree);
 	}
 
@@ -18,7 +26,7 @@ public class ExternalMemoryTrieTest
 	public void testIteratorAll()
 	{
 		ExternalMemoryTrie<Integer> tree = new ExternalMemoryTrie<Integer>(
-				new File("target/treap"), 50, 100000000);
+				new File("target/treap"), 50, 100000000, 0);
 
 		ExternalMemorySplittableSetTest.testFullIterator(tree);
 	}
@@ -27,7 +35,7 @@ public class ExternalMemoryTrieTest
 	public void testIteratorPrefix()
 	{
 		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
-				50, 100000000);
+				50, 100000000, 0);
 		ExternalMemorySplittableSetTest.testPrefixIterators(tree);
 	}
 }

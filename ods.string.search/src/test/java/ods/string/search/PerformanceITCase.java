@@ -234,18 +234,34 @@ public class PerformanceITCase
 	}
 
 	@Test
-	public void testRandomAddExternalTrie()
+	public void testRandomAddExternalTrieEvenSplits()
 	{
 		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
-				125, 50000000l);
+				75, 50000000l, 0);
 		fillTreeRandomly(tree, 60000, 100000);
 	}
 
 	@Test
-	public void testSequentialAddExternalTrie()
+	public void testRandomAddExternalTrieMinDepthSplits()
 	{
 		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
-				6000, 50000000l);
+				75, 50000000l, 4);
+		fillTreeRandomly(tree, 60000, 100000);
+	}
+
+	@Test
+	public void testSequentialAddExternalTrieEvenSplits()
+	{
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				6000, 50000000l, 0);
+		fillTreeSequentially(tree, 60000, 2000000);
+	}
+
+	@Test
+	public void testSequentialAddExternalTrieMinDepthSplits()
+	{
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				6000, 50000000l, 4);
 		fillTreeSequentially(tree, 60000, 2000000);
 	}
 

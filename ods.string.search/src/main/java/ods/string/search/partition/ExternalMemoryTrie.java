@@ -25,12 +25,13 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		trieCache.register("~", root);
 	}
 
-	public ExternalMemoryTrie(File storageDirectory, int maxSetSize, long maxInMemoryBytes)
+	public ExternalMemoryTrie(File storageDirectory, int maxSetSize, long maxInMemoryBytes,
+			int minPartitionDepth)
 	{
 		this.maxSetSize = maxSetSize;
 		trieCache = new ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>(storageDirectory,
 				maxInMemoryBytes, true);
-		trieCache.register("~", new BinaryPatriciaTrie<T>());
+		trieCache.register("~", new BinaryPatriciaTrie<T>(minPartitionDepth));
 	}
 
 	@Override
@@ -43,7 +44,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		while ((result = curTrie.add(valueAsBytes)) > 0)
 			curTrie = trieCache.get(getTrieIdFromBytes(valueAsBytes, result));
 
-		if (result == 0 && curTrie.size() > maxSetSize)
+		if (result == 0 && curTrie.r.subtreeSize > maxSetSize)
 		{
 			BinaryPatriciaTrie<T> newTrie = (BinaryPatriciaTrie<T>) curTrie.split(u);
 			trieCache.register(getTrieIdFromBytes(newTrie.r.label, newTrie.r.bitsUsed), newTrie);
@@ -89,16 +90,17 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		if (result == 0)
 		{
 			size--;
-			if (curTrie.childTrieLabel != null && curTrie.size() < (maxSetSize >> 3))
+			if (curTrie.childTrieLabel != null && curTrie.r.subtreeSize < (maxSetSize >> 3))
 			{
-				long beforeSize = curTrie.size();
+				long beforeSize = curTrie.r.subtreeSize;
 				String childTrieId = getTrieIdFromBytes(curTrie.childTrieLabel.label,
 						curTrie.childTrieLabel.bitsUsed);
 				BinaryPatriciaTrie<T> childToMerge = trieCache.get(childTrieId);
 				curTrie.merge(childToMerge);
 				trieCache.unregister(childTrieId);
 
-				System.out.println("Set Merge performed: " + beforeSize + " " + curTrie.size());
+				System.out.println("Set Merge performed: " + beforeSize + " "
+						+ curTrie.r.subtreeSize);
 			}
 		}
 		return result == 0;
