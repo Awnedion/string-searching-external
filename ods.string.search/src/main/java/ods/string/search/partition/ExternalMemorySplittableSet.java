@@ -224,4 +224,10 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		else
 			return new EMSetIterator(to, from);
 	}
+
+	@Override
+	public void close()
+	{
+		setCache.close();
+	}
 }

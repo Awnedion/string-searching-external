@@ -1,5 +1,6 @@
 package ods.string.search.partition;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -57,6 +58,10 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	private File storageDirectory;
 	private LinkedHashMap<String, Block> cachedBlocks = new LinkedHashMap<String, Block>(16, 0.75f,
 			true);
+	private long uncompressBytes = 0;
+	private long compressedBytes = 0;
+	private long serializationTime = 0;
+	private long diskWriteTime = 0;
 
 	public ExternalMemoryObjectCache(File directory)
 	{
@@ -141,12 +146,22 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		{
 			try
 			{
-				OutputStream os = new FileOutputStream(new File(storageDirectory, block));
+				long startTime = System.currentTimeMillis();
+				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+				OutputStream os = bytes;
 				if (compress)
 					os = new SnappyOutputStream(os);
 				ObjectOutputStream out = new ObjectOutputStream(os);
 				out.writeObject(flushBlock.data);
 				out.close();
+				serializationTime += System.currentTimeMillis() - startTime;
+				startTime = System.currentTimeMillis();
+				OutputStream fileOutput = new FileOutputStream(new File(storageDirectory, block));
+				fileOutput.write(bytes.toByteArray());
+				fileOutput.close();
+				diskWriteTime += System.currentTimeMillis() - startTime;
+				uncompressBytes += flushBlock.previousByteSize;
+				compressedBytes += bytes.size();
 			} catch (IOException e)
 			{
 				throw new RuntimeException(e);
@@ -161,5 +176,14 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		{
 			flushBlock(block);
 		}
+
+		System.out.println("Compression Ratio: " + getCompressionRatio());
+		System.out.println("Total Serialization Time: " + serializationTime + "ms");
+		System.out.println("Total Disk Write Time: " + diskWriteTime + "ms");
+	}
+
+	public double getCompressionRatio()
+	{
+		return (double) compressedBytes / uncompressBytes;
 	}
 }

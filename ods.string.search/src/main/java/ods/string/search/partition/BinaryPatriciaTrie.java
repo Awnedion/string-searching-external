@@ -858,4 +858,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		inputStream.defaultReadObject();
 		dirty = false;
 	}
+
+	@Override
+	public void close()
+	{
+	}
 }

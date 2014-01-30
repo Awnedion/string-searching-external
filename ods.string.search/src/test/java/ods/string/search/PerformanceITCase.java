@@ -246,7 +246,7 @@ public class PerformanceITCase
 	{
 		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
 				75, 50000000l, 4);
-		fillTreeRandomly(tree, 60000, 100000);
+		fillTreeRandomly(tree, 60000, 10000);
 	}
 
 	@Test
@@ -277,12 +277,16 @@ public class PerformanceITCase
 
 		long startTime = System.currentTimeMillis();
 		int count = 0;
+		long reportingTime = System.currentTimeMillis() + outputInterval;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			if (count % outputInterval == 0)
+			if (System.currentTimeMillis() >= reportingTime)
+			{
 				System.out.println(count + " insert operations, " + tree.size()
 						+ " size tree, created in " + (System.currentTimeMillis() - startTime)
 						+ "ms");
+				reportingTime += outputInterval;
+			}
 			String input = generateRandomString(rand, 1);
 			tree.add(input);
 			count++;
@@ -292,11 +296,15 @@ public class PerformanceITCase
 
 		startTime = System.currentTimeMillis();
 		count = 0;
+		reportingTime = System.currentTimeMillis() + outputInterval;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			if (count % outputInterval == 0)
+			if (System.currentTimeMillis() >= reportingTime)
+			{
 				System.out.println(count + " find operations, performed in "
 						+ (System.currentTimeMillis() - startTime) + "ms");
+				reportingTime += outputInterval;
+			}
 			String input = generateRandomString(rand, 1);
 			tree.contains(input);
 			count++;
@@ -306,12 +314,16 @@ public class PerformanceITCase
 		startTime = System.currentTimeMillis();
 		count = 0;
 		long iterationCount = 0;
+		reportingTime = System.currentTimeMillis() + outputInterval;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			if (count % outputInterval == 0)
+			if (System.currentTimeMillis() >= reportingTime)
+			{
 				System.out.println(count + " prefix search operations, " + iterationCount
 						+ " elements returned, performed in "
 						+ (System.currentTimeMillis() - startTime) + "ms");
+				reportingTime += outputInterval;
+			}
 			String input = generateRandomString(rand, 6);
 			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
 					+ (char) (input.charAt(input.length() - 1) + 1));
@@ -325,7 +337,19 @@ public class PerformanceITCase
 		System.out.println(count + " prefix search operations, " + iterationCount
 				+ " elements returned, performed in " + timeLimit + "ms");
 
-		System.out.println(Runtime.getRuntime().totalMemory());
+		printSpaceStats(tree);
+	}
+
+	private void printSpaceStats(PrefixSearchableSet<String> tree)
+	{
+		tree.close();
+		long totalSpaceUsage = 0;
+		for (File f : new File("target/treap").listFiles())
+		{
+			totalSpaceUsage += f.length();
+		}
+		System.out.println("Total Space Usage: " + totalSpaceUsage / 1000000.
+				+ "MB\nAverage Space Usage Per Value: " + (double) totalSpaceUsage / tree.size());
 	}
 
 	private String generateRandomString(Random rand, int minLength)
@@ -347,12 +371,16 @@ public class PerformanceITCase
 	{
 		long startTime = System.currentTimeMillis();
 		int count = 0;
+		long reportingTime = System.currentTimeMillis() + outputInterval;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			if (count % outputInterval == 0)
+			if (System.currentTimeMillis() >= reportingTime)
+			{
 				System.out.println(count + " insert operations, " + tree.size()
 						+ " size tree, created in " + (System.currentTimeMillis() - startTime)
 						+ "ms");
+				reportingTime += outputInterval;
+			}
 			String val = convertToFixedLengthString(count);
 			tree.add(val);
 			count++;
@@ -363,11 +391,15 @@ public class PerformanceITCase
 		int treeSize = (int) tree.size();
 		startTime = System.currentTimeMillis();
 		count = 0;
+		reportingTime = System.currentTimeMillis() + outputInterval;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			if (count % outputInterval == 0)
+			if (System.currentTimeMillis() >= reportingTime)
+			{
 				System.out.println(count + " find operations, performed in "
 						+ (System.currentTimeMillis() - startTime) + "ms");
+				reportingTime += outputInterval;
+			}
 			tree.contains(convertToFixedLengthString(count % treeSize));
 			count++;
 		}
@@ -376,12 +408,16 @@ public class PerformanceITCase
 		startTime = System.currentTimeMillis();
 		count = 0;
 		long iterationCount = 0;
+		reportingTime = System.currentTimeMillis() + outputInterval;
 		while (System.currentTimeMillis() - startTime < timeLimit)
 		{
-			if (count % outputInterval == 0)
+			if (System.currentTimeMillis() >= reportingTime)
+			{
 				System.out.println(count + " prefix search operations, " + iterationCount
 						+ " elements returned, performed in "
 						+ (System.currentTimeMillis() - startTime) + "ms");
+				reportingTime += outputInterval;
+			}
 			String input = convertToFixedLengthString(count % treeSize);
 			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
 					+ (char) (input.charAt(input.length() - 1) + 1));
@@ -395,7 +431,7 @@ public class PerformanceITCase
 		System.out.println(count + " prefix search operations, " + iterationCount
 				+ " elements returned, performed in " + timeLimit + "ms");
 
-		System.out.println(Runtime.getRuntime().totalMemory());
+		printSpaceStats(tree);
 	}
 
 	private String convertToFixedLengthString(int value)

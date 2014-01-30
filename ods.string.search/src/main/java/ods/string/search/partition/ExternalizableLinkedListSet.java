@@ -214,4 +214,9 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 		inputStream.defaultReadObject();
 		init();
 	}
+
+	@Override
+	public void close()
+	{
+	}
 }

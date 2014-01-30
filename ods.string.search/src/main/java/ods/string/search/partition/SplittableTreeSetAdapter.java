@@ -177,4 +177,8 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 		return adaptee.floor(val);
 	}
 
+	@Override
+	public void close()
+	{
+	}
 }

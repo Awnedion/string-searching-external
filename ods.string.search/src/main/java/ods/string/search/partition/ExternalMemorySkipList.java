@@ -453,4 +453,10 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		result += "]";
 		return result;
 	}
+
+	@Override
+	public void close()
+	{
+		listCache.close();
+	}
 }

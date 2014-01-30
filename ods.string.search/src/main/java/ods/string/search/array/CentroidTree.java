@@ -551,4 +551,10 @@ public class CentroidTree implements PrefixSearchableSet<String>
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public void close()
+	{
+		array.close();
+	}
 }

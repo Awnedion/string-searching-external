@@ -206,4 +206,9 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		return result;
 	}
 
+	@Override
+	public void close()
+	{
+		trieCache.close();
+	}
 }

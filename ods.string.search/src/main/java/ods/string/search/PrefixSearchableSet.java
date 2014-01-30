@@ -14,4 +14,6 @@ public interface PrefixSearchableSet<T> extends Iterable<T>
 	long size();
 
 	Iterator<T> iterator(T from, T to);
+
+	void close();
 }

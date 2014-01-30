@@ -794,4 +794,9 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		Node<T> result = findLENode(val);
 		return result == null ? null : result.x;
 	}
+
+	@Override
+	public void close()
+	{
+	}
 }
