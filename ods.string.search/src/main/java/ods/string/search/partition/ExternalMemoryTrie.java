@@ -5,13 +5,13 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Stack;
 
-import ods.string.search.PrefixSearchableSet;
 import ods.string.search.partition.BinaryPatriciaTrie.SearchPoint;
+import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 
 import org.apache.commons.codec.binary.Hex;
 
 public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implements
-		PrefixSearchableSet<T>
+		EMPrefixSearchableSet<T>
 {
 	private ExternalMemoryObjectCache<BinaryPatriciaTrie<T>> trieCache;
 	private int maxSetSize = 100000;
@@ -32,6 +32,15 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		trieCache = new ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>(storageDirectory,
 				maxInMemoryBytes, true);
 		trieCache.register("~", new BinaryPatriciaTrie<T>(minPartitionDepth));
+	}
+
+	public ExternalMemoryTrie(File storageDirectory, ExternalMemoryTrie<T> baseConfig)
+	{
+		trieCache = new ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>(storageDirectory,
+				baseConfig.trieCache);
+		BinaryPatriciaTrie<T> root = (BinaryPatriciaTrie<T>) baseConfig.trieCache.get("~")
+				.createNewSet();
+		trieCache.register("~", root);
 	}
 
 	@Override
@@ -210,5 +219,17 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 	public void close()
 	{
 		trieCache.close();
+	}
+
+	@Override
+	public EMPrefixSearchableSet<T> createNewStructure(File newStorageDir)
+	{
+		return new ExternalMemoryTrie<T>(newStorageDir, this);
+	}
+
+	@Override
+	public ExternalMemoryObjectCache<? extends ExternalizableMemoryObject> getObjectCache()
+	{
+		return trieCache;
 	}
 }

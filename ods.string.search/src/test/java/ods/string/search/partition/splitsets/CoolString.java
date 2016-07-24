@@ -1,6 +1,6 @@
-package ods.string.search.partition;
+package ods.string.search.partition.splitsets;
 
-import ods.string.search.partition.ExternalizableMemoryObject;
+import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 
 public class CoolString implements ExternalizableMemoryObject
 {

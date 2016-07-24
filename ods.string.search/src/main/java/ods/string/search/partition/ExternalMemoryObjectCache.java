@@ -14,6 +14,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
+import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
+
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 
@@ -37,10 +39,6 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 
 		public void updateSizeEstimate()
 		{
-			if (data == null)
-			{
-				System.out.println("wtf");
-			}
 			inMemoryByteEstimate -= previousByteSize;
 			previousByteSize = data.getByteSize() + BASE_CACHED_BLOCK_BYTE_SIZE;
 			inMemoryByteEstimate += previousByteSize;
@@ -71,6 +69,11 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	public ExternalMemoryObjectCache(File directory, long cacheSize, boolean compress)
 	{
 		init(directory, cacheSize, compress);
+	}
+
+	public ExternalMemoryObjectCache(File directory, ExternalMemoryObjectCache<T> baseCacheConfig)
+	{
+		init(directory, baseCacheConfig.maxCacheMemorySize, baseCacheConfig.compress);
 	}
 
 	private void init(File directory, long cacheSize, boolean compress)
@@ -185,5 +188,20 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	public double getCompressionRatio()
 	{
 		return (double) compressedBytes / uncompressBytes;
+	}
+
+	public File getStorageDirectory()
+	{
+		return storageDirectory;
+	}
+
+	public long getSerializationTime()
+	{
+		return serializationTime;
+	}
+
+	public long getDiskWriteTime()
+	{
+		return diskWriteTime;
 	}
 }

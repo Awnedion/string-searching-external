@@ -1,4 +1,4 @@
-package ods.string.search.partition;
+package ods.string.search.partition.splitsets;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -180,5 +180,11 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 	@Override
 	public void close()
 	{
+	}
+
+	@Override
+	public SplittableSet<T> createNewSet()
+	{
+		return new SplittableTreeSetAdapter<T>(this);
 	}
 }

@@ -6,10 +6,12 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import ods.string.search.PrefixSearchableSet;
+import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
+import ods.string.search.partition.splitsets.SplittableSet;
+import ods.string.search.partition.splitsets.Treap;
 
 public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable> implements
-		PrefixSearchableSet<T>
+		EMPrefixSearchableSet<T>
 {
 	private ExternalMemoryObjectCache<SplittableSet<T>> setCache;
 	private TreeMap<T, String> partitionRanges = new TreeMap<T, String>();
@@ -32,6 +34,17 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		this.maxSetSize = maxSetSize;
 		setCache = new ExternalMemoryObjectCache<SplittableSet<T>>(storageDirectory,
 				maxInMemoryBytes, true);
+		setCache.register(uniqueId + "", root);
+		uniqueId++;
+	}
+
+	public ExternalMemorySplittableSet(File storageDirectory,
+			ExternalMemorySplittableSet<T> baseConfig)
+	{
+		this.maxSetSize = baseConfig.maxSetSize;
+		setCache = new ExternalMemoryObjectCache<SplittableSet<T>>(storageDirectory,
+				baseConfig.setCache);
+		SplittableSet<T> root = baseConfig.setCache.get("0").createNewSet();
 		setCache.register(uniqueId + "", root);
 		uniqueId++;
 	}
@@ -229,5 +242,17 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 	public void close()
 	{
 		setCache.close();
+	}
+
+	@Override
+	public EMPrefixSearchableSet<T> createNewStructure(File newStorageDir)
+	{
+		return new ExternalMemorySplittableSet<T>(newStorageDir, this);
+	}
+
+	@Override
+	public ExternalMemoryObjectCache<? extends ExternalizableMemoryObject> getObjectCache()
+	{
+		return setCache;
 	}
 }

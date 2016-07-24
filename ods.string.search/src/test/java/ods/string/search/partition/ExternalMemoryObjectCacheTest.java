@@ -6,6 +6,7 @@ import java.io.File;
 
 import ods.string.search.Utils;
 import ods.string.search.partition.ExternalMemoryObjectCache;
+import ods.string.search.partition.splitsets.CoolString;
 
 import org.junit.Assert;
 import org.junit.Before;

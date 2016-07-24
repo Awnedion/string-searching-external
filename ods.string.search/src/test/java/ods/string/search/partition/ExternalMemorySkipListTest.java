@@ -2,6 +2,8 @@ package ods.string.search.partition;
 
 import java.io.File;
 
+import ods.string.search.partition.splitsets.Treap;
+
 import org.junit.Test;
 
 public class ExternalMemorySkipListTest

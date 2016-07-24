@@ -1,28 +1,28 @@
-package ods.string.search.partition;
+package ods.string.search.partition.splitsets;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 
-public class ExternalizableArrayList<T extends Serializable> extends ArrayList<T> implements
+public class ExternalizableLinkedList<T extends Serializable> extends LinkedList<T> implements
 		ExternalMemoryList<T>
 {
 	private static final long serialVersionUID = 5282627367797663843L;
 
-	private static final int BYTES_PER_NODE = 8;
+	private static final int BYTES_PER_NODE = 40;
 
 	private long dataBytesEstimate = 0;
 	private transient boolean dirty = true;
 	private int bytesPerNodeWithData = -1;
 
-	public ExternalizableArrayList()
+	public ExternalizableLinkedList()
 	{
 		super();
 	}
 
-	public ExternalizableArrayList(Collection<T> c)
+	public ExternalizableLinkedList(Collection<T> c)
 	{
 		for (T elem : c)
 		{
@@ -33,8 +33,8 @@ public class ExternalizableArrayList<T extends Serializable> extends ArrayList<T
 	@Override
 	public long getByteSize()
 	{
-		// 16 class object, 16 for child variables, 40 arraylist variables
-		return size() * bytesPerNodeWithData + (dataBytesEstimate << 1) + 72;
+		// 16 class object, 16 for child variables, 24 linkedList variables
+		return size() * bytesPerNodeWithData + (dataBytesEstimate << 1) + 56;
 	}
 
 	@Override

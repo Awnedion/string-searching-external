@@ -11,11 +11,11 @@ import ods.string.search.array.VebIndexLayout;
 import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
 import ods.string.search.partition.ExternalMemoryTrie;
-import ods.string.search.partition.ExternalizableArrayList;
-import ods.string.search.partition.ExternalizableLinkedList;
-import ods.string.search.partition.ExternalizableLinkedListSet;
-import ods.string.search.partition.SplittableTreeSetAdapter;
-import ods.string.search.partition.Treap;
+import ods.string.search.partition.splitsets.ExternalizableArrayList;
+import ods.string.search.partition.splitsets.ExternalizableLinkedList;
+import ods.string.search.partition.splitsets.ExternalizableListSet;
+import ods.string.search.partition.splitsets.SplittableTreeSetAdapter;
+import ods.string.search.partition.splitsets.Treap;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -115,7 +115,7 @@ public class PerformanceITCase
 	public void testRandomAddExternalLinkedListBinarySearch()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 70, 50000000l, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 70, 50000000l, new ExternalizableListSet<String>(
 						new ExternalizableLinkedList<String>(), false));
 		fillTreeRandomly(tree, 60000, 150000);
 	}
@@ -124,7 +124,7 @@ public class PerformanceITCase
 	public void testRandomAddExternalLinkedListLinearCompare()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 55, 50000000l, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 55, 50000000l, new ExternalizableListSet<String>(
 						new ExternalizableLinkedList<String>(), true));
 		fillTreeRandomly(tree, 60000, 150000);
 	}
@@ -133,7 +133,7 @@ public class PerformanceITCase
 	public void testRandomAddExternalArrayListBinarySearch()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 70, 50000000l, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 70, 50000000l, new ExternalizableListSet<String>(
 						new ExternalizableArrayList<String>(), false));
 		fillTreeRandomly(tree, 60000, 150000);
 	}
@@ -142,7 +142,7 @@ public class PerformanceITCase
 	public void testRandomAddExternalArrayListLinearCompare()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 55, 50000000l, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 55, 50000000l, new ExternalizableListSet<String>(
 						new ExternalizableArrayList<String>(), true));
 		fillTreeRandomly(tree, 60000, 150000);
 	}
@@ -159,7 +159,7 @@ public class PerformanceITCase
 	public void testSequentialAddExternalLinkedList()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 50000000l, new ExternalizableLinkedListSet<String>());
+				new File("target/treap"), 500, 50000000l, new ExternalizableListSet<String>());
 		fillTreeSequentially(tree, 60000, 2000000);
 	}
 
@@ -167,7 +167,7 @@ public class PerformanceITCase
 	public void testSequentialAddExternalArrayListBinarySearch()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 7500, 50000000l, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 7500, 50000000l, new ExternalizableListSet<String>(
 						new ExternalizableArrayList<String>(), false));
 		fillTreeSequentially(tree, 60000, 8000000);
 	}
@@ -176,7 +176,7 @@ public class PerformanceITCase
 	public void testRandomAddSkipList()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 35., 50000000l, new ExternalizableLinkedListSet<String>(
+				"target/treap"), 1. / 35., 50000000l, new ExternalizableListSet<String>(
 				new ExternalizableLinkedList<String>(), true));
 		fillTreeRandomly(tree, 60000, 100000);
 	}
@@ -193,7 +193,7 @@ public class PerformanceITCase
 	public void testRandomAddSkipListArrayListLinearCompare()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 45., 50000000l, new ExternalizableLinkedListSet<String>(
+				"target/treap"), 1. / 45., 50000000l, new ExternalizableListSet<String>(
 				new ExternalizableArrayList<String>(), true));
 		fillTreeRandomly(tree, 60000, 200000);
 	}
@@ -202,7 +202,7 @@ public class PerformanceITCase
 	public void testRandomAddSkipListArrayListBinarySearch()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 55., 50000000l, new ExternalizableLinkedListSet<String>(
+				"target/treap"), 1. / 55., 50000000l, new ExternalizableListSet<String>(
 				new ExternalizableArrayList<String>(), false));
 		fillTreeRandomly(tree, 60000, 200000);
 	}
@@ -211,7 +211,7 @@ public class PerformanceITCase
 	public void testSequentialAddSkipList()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 50., 50000000l, new ExternalizableLinkedListSet<String>(
+				"target/treap"), 1. / 50., 50000000l, new ExternalizableListSet<String>(
 				new ExternalizableLinkedList<String>(), true));
 		fillTreeSequentially(tree, 60000, 600000);
 	}
@@ -228,7 +228,7 @@ public class PerformanceITCase
 	public void testSequentialAddSkipListArrayListBinarySearch()
 	{
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
-				"target/treap"), 1. / 3000., 50000000l, new ExternalizableLinkedListSet<String>(
+				"target/treap"), 1. / 3000., 50000000l, new ExternalizableListSet<String>(
 				new ExternalizableArrayList<String>(), false));
 		fillTreeSequentially(tree, 60000, 6000000);
 	}

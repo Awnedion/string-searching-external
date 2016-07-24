@@ -1,4 +1,4 @@
-package ods.string.search.partition;
+package ods.string.search.partition.splitsets;
 
 import java.io.Serializable;
 
@@ -14,4 +14,6 @@ public interface SplittableSet<T extends Comparable<T> & Serializable> extends
 	T locateMiddleValue();
 
 	T floor(T val);
+
+	SplittableSet<T> createNewSet();
 }

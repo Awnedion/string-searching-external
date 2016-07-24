@@ -1,4 +1,4 @@
-package ods.string.search.partition;
+package ods.string.search.partition.splitsets;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>> implements
+public class ExternalizableListSet<T extends Serializable & Comparable<T>> implements
 		SplittableSet<T>
 {
 	private static final long serialVersionUID = -5606125403006815540L;
@@ -18,7 +18,7 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 	private boolean linearCompare;
 	private transient Constructor<ExternalMemoryList<T>> copyConstructor;
 
-	public ExternalizableLinkedListSet()
+	public ExternalizableListSet()
 	{
 		linkedList = new ExternalizableLinkedList<T>();
 		linearCompare = false;
@@ -26,7 +26,7 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 	}
 
 	@SuppressWarnings("unchecked")
-	public ExternalizableLinkedListSet(ExternalizableLinkedListSet<T> template)
+	public ExternalizableListSet(ExternalizableListSet<T> template)
 	{
 		try
 		{
@@ -39,7 +39,7 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 		init();
 	}
 
-	public ExternalizableLinkedListSet(ExternalMemoryList<T> list, boolean linearCompare)
+	public ExternalizableListSet(ExternalMemoryList<T> list, boolean linearCompare)
 	{
 		linkedList = list;
 		this.linearCompare = linearCompare;
@@ -123,10 +123,10 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 		if (splitIndex < 0)
 			splitIndex = Math.abs(splitIndex) - 1;
 		List<T> suffixList = linkedList.subList(splitIndex, linkedList.size());
-		ExternalizableLinkedListSet<T> result;
+		ExternalizableListSet<T> result;
 		try
 		{
-			result = new ExternalizableLinkedListSet<T>(copyConstructor.newInstance(suffixList),
+			result = new ExternalizableListSet<T>(copyConstructor.newInstance(suffixList),
 					linearCompare);
 		} catch (Exception e)
 		{
@@ -145,7 +145,7 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 		if (t.size() == 0)
 			return true;
 
-		ExternalizableLinkedListSet<T> higherSet = (ExternalizableLinkedListSet<T>) t;
+		ExternalizableListSet<T> higherSet = (ExternalizableListSet<T>) t;
 		int thisSize = linkedList.size();
 		if (thisSize != 0
 				&& higherSet.linkedList.get(0).compareTo(linkedList.get(thisSize - 1)) < 0)
@@ -218,5 +218,11 @@ public class ExternalizableLinkedListSet<T extends Serializable & Comparable<T>>
 	@Override
 	public void close()
 	{
+	}
+
+	@Override
+	public SplittableSet<T> createNewSet()
+	{
+		return new ExternalizableListSet<T>(this);
 	}
 }

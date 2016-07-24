@@ -10,9 +10,13 @@ import java.util.PriorityQueue;
 import java.util.Random;
 
 import ods.string.search.PrefixSearchableSet;
+import ods.string.search.partition.splitsets.ExternalizableLinkedList;
+import ods.string.search.partition.splitsets.ExternalizableListSet;
+import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
+import ods.string.search.partition.splitsets.SplittableSet;
 
 public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> implements
-		PrefixSearchableSet<T>
+		EMPrefixSearchableSet<T>
 {
 	private static class SubList<T extends Comparable<T> & Serializable> implements
 			ExternalizableMemoryObject, Iterable<T>
@@ -73,7 +77,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	public ExternalMemorySkipList(File storageDirectory)
 	{
 		promotionProbability = 1. / 35.;
-		partitionImplementation = new ExternalizableLinkedListSet<T>(
+		partitionImplementation = new ExternalizableListSet<T>(
 				new ExternalizableLinkedList<T>(), true);
 		init(storageDirectory, 1000000000);
 	}
@@ -86,9 +90,18 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		init(storageDirectory, cacheSize);
 	}
 
+	public ExternalMemorySkipList(File storageDirectory, ExternalMemorySkipList<T> baseConfig)
+	{
+		this.promotionProbability = baseConfig.promotionProbability;
+		partitionImplementation = baseConfig.partitionImplementation.createNewSet();
+		listCache = new ExternalMemoryObjectCache<>(storageDirectory, baseConfig.listCache);
+		init(storageDirectory, 0);
+	}
+
 	private void init(File storageDirectory, long cacheSize)
 	{
-		listCache = new ExternalMemoryObjectCache<SubList<T>>(storageDirectory, cacheSize, true);
+		if (listCache != null)
+			listCache = new ExternalMemoryObjectCache<SubList<T>>(storageDirectory, cacheSize, true);
 		maxHeight = 1;
 		SubList<T> root = new SubList<T>(partitionImplementation);
 		listCache.register("-1", root);
@@ -458,5 +471,17 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	public void close()
 	{
 		listCache.close();
+	}
+
+	@Override
+	public EMPrefixSearchableSet<T> createNewStructure(File newStorageDir)
+	{
+		return new ExternalMemorySkipList<T>(newStorageDir, this);
+	}
+
+	@Override
+	public ExternalMemoryObjectCache<? extends ExternalizableMemoryObject> getObjectCache()
+	{
+		return listCache;
 	}
 }

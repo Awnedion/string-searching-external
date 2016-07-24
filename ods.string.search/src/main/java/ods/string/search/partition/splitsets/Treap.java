@@ -1,4 +1,4 @@
-package ods.string.search.partition;
+package ods.string.search.partition.splitsets;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -798,5 +798,11 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	@Override
 	public void close()
 	{
+	}
+
+	@Override
+	public SplittableSet<T> createNewSet()
+	{
+		return new Treap<T>(this);
 	}
 }

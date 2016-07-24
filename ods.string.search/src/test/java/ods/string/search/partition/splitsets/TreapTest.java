@@ -1,4 +1,4 @@
-package ods.string.search.partition;
+package ods.string.search.partition.splitsets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -7,6 +7,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Iterator;
+
+import ods.string.search.partition.splitsets.SplittableSet;
+import ods.string.search.partition.splitsets.Treap;
 
 import org.junit.Before;
 import org.junit.Test;

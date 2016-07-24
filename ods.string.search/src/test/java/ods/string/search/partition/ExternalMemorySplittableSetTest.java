@@ -10,6 +10,11 @@ import java.util.TreeSet;
 
 import ods.string.search.PrefixSearchableSet;
 import ods.string.search.Utils;
+import ods.string.search.partition.splitsets.ExternalizableArrayList;
+import ods.string.search.partition.splitsets.ExternalizableLinkedList;
+import ods.string.search.partition.splitsets.ExternalizableListSet;
+import ods.string.search.partition.splitsets.SplittableTreeSetAdapter;
+import ods.string.search.partition.splitsets.Treap;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -43,7 +48,7 @@ public class ExternalMemorySplittableSetTest
 	public void testAddSearchRemoveLinkedListBinarySearch()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 500, 300000, new ExternalizableListSet<String>(
 						new ExternalizableLinkedList<String>(), false));
 		testOperations(tree);
 	}
@@ -52,7 +57,7 @@ public class ExternalMemorySplittableSetTest
 	public void testAddSearchRemoveLinkedListLinearCompare()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 500, 300000, new ExternalizableListSet<String>(
 						new ExternalizableLinkedList<String>(), true));
 		testOperations(tree);
 	}
@@ -61,7 +66,7 @@ public class ExternalMemorySplittableSetTest
 	public void testAddSearchRemoveArrayListBinarySearch()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 500, 300000, new ExternalizableListSet<String>(
 						new ExternalizableArrayList<String>(), false));
 		testOperations(tree);
 	}
@@ -70,7 +75,7 @@ public class ExternalMemorySplittableSetTest
 	public void testAddSearchRemoveArrayListLinearCompare()
 	{
 		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
-				new File("target/treap"), 500, 300000, new ExternalizableLinkedListSet<String>(
+				new File("target/treap"), 500, 300000, new ExternalizableListSet<String>(
 						new ExternalizableArrayList<String>(), true));
 		testOperations(tree);
 	}

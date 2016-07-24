@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import ods.string.search.partition.splitsets.SplittableSet;
+
 /**
  * This class implements a variation of the Patricia Trie data structure. This is a tree whose
  * internal nodes all have 2 or more children and whose edges are labelled with strings. Each leaf,
@@ -862,5 +864,13 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	@Override
 	public void close()
 	{
+	}
+
+	@Override
+	public SplittableSet<T> createNewSet()
+	{
+		BinaryPatriciaTrie<T> result = new BinaryPatriciaTrie<T>();
+		result.minPartitionDepth = minPartitionDepth;
+		return result;
 	}
 }
