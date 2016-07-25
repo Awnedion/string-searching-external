@@ -47,6 +47,8 @@ public class PerformanceReportITCase
 		int prefixLimit = 1000000;
 		int removeLimit = (int) (insertLimit * 0.75);
 
+		warmUpVm(insertLimit, searchLimit, prefixLimit);
+
 		BufferedWriter writer = new BufferedWriter(new FileWriter("target/" + reportName + ".tsv"));
 		writeReportHeader(insertLimit, searchLimit, prefixLimit, removeLimit, writer);
 
@@ -90,6 +92,19 @@ public class PerformanceReportITCase
 			writeResultMetrics(writer, cases.get(x).name + "-avg", caseAvgs.get(x));
 
 		writer.close();
+	}
+
+	private void warmUpVm(int insertLimit, int searchLimit, int prefixLimit)
+	{
+		File warmUpDir = new File("target/warmUp");
+		Utils.deleteRecursively(warmUpDir);
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				warmUpDir, 7500, 200000000l, new ExternalizableListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+		fillTreeRandomly(tree, insertLimit, searchLimit, prefixLimit, new Random(),
+				InputType.SEQUENTIAL);
+		tree.close();
+		Utils.deleteRecursively(warmUpDir);
 	}
 
 	private void writeResultMetrics(BufferedWriter writer, String resultName,
@@ -256,7 +271,7 @@ public class PerformanceReportITCase
 						input = insertionStrings.get(rand.nextInt((int) sizeLimit));
 				}
 			} else if (inputType.equals(InputType.SEQUENTIAL))
-				input = Utils.convertToFixedLengthString((int) (x % sizeLimit), 10);
+				input = Utils.convertToFixedLengthString((int) (x % (sizeLimit / 100)), 10);
 			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
 					+ (char) (input.charAt(input.length() - 1) + 1));
 			while (iter.hasNext())
@@ -325,9 +340,18 @@ public class PerformanceReportITCase
 	public void testBTree() throws Exception
 	{
 		ArrayList<ReportCase> cases = new ArrayList<ReportCase>();
-		cases.add(new ReportCase("BTree-Seq-ArrayList-70", new ExternalMemorySplittableSet<String>(
-				new File("target/tmp"), 7500, 50000000l, new ExternalizableListSet<String>(
-						new ExternalizableArrayList<String>(), false)), InputType.SEQUENTIAL));
+		cases.add(new ReportCase("BTree-Seq-ArrayList-5000",
+				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 5000, 50000000l,
+						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
+								false)), InputType.SEQUENTIAL));
+		cases.add(new ReportCase("BTree-Seq-ArrayList-15000",
+				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 15000, 50000000l,
+						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
+								false)), InputType.SEQUENTIAL));
+		cases.add(new ReportCase("BTree-Seq-ArrayList-25000",
+				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 25000, 50000000l,
+						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
+								false)), InputType.SEQUENTIAL));
 		cases.add(new ReportCase("BTree-Rand-ArrayList-70",
 				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 70, 50000000l,
 						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),

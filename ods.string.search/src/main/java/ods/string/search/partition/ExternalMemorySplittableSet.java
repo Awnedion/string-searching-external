@@ -109,8 +109,6 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 					setCache.unregister(smallEntry.getValue());
 					partitionRanges.remove(smallEntry.getKey());
 				}
-
-				System.out.println("Set Merge performed: " + curSet.size() + " " + mergeSet.size());
 			}
 		}
 		return result;
@@ -131,25 +129,20 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 
 	private class EMSetIterator implements Iterator<T>
 	{
-		private T currentPartitionKey;
-		private SplittableSet<T> currentSet;
 		private Iterator<T> currentSetIter;
-		private String endSetKey;
-		private SplittableSet<T> endSet;
 
 		private T prev;
 
-		private T from;
 		private T to;
 
 		public EMSetIterator(T from, T to)
 		{
-			this.from = from;
+			this.prev = from;
 			this.to = to;
 
+			SplittableSet<T> currentSet;
 			if (from != null)
 			{
-				currentPartitionKey = from;
 				Entry<T, String> startSetPartition = partitionRanges.floorEntry(from);
 				if (startSetPartition == null)
 					currentSet = setCache.get("0");
@@ -159,35 +152,23 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 			} else
 			{
 				currentSet = setCache.get("0");
-				T val = currentSet.iterator().next();
-				currentPartitionKey = val;
-				this.from = val;
 				currentSetIter = currentSet.iterator();
-			}
-
-			if (to != null)
-			{
-				Entry<T, String> endSetPartition = partitionRanges.floorEntry(to);
-				if (endSetPartition == null)
-				{
-					endSet = setCache.get("0");
-					endSetKey = "0";
-				} else
-				{
-					endSetKey = endSetPartition.getValue();
-					endSet = setCache.get(endSetKey);
-				}
-			} else
-			{
-				Entry<T, String> endSetPartition = partitionRanges.lastEntry();
-				endSetKey = endSetPartition.getValue();
-				endSet = setCache.get(endSetKey);
 			}
 		}
 
 		@Override
 		public boolean hasNext()
 		{
+			if (!currentSetIter.hasNext() && (to == null || prev.compareTo(to) < 0))
+			{
+				Entry<T, String> nextPartition = partitionRanges.higherEntry(prev);
+				if (nextPartition != null)
+				{
+					SplittableSet<T> currentSet = setCache.get(nextPartition.getValue());
+					currentSetIter = currentSet.iterator(prev, to);
+				}
+			}
+
 			return currentSetIter.hasNext();
 		}
 
@@ -196,21 +177,6 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		{
 			T result = currentSetIter.next();
 			prev = result;
-
-			if (!currentSetIter.hasNext() && currentSet != endSet)
-			{
-				Entry<T, String> nextPartition = partitionRanges.higherEntry(currentPartitionKey);
-				try
-				{
-					currentPartitionKey = nextPartition.getKey();
-				} catch (NullPointerException e)
-				{
-					e.printStackTrace();
-				}
-				currentSet = setCache.get(nextPartition.getValue());
-				currentSetIter = currentSet.iterator(from, to);
-				setCache.get(endSetKey);
-			}
 
 			return result;
 		}

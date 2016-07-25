@@ -2,6 +2,8 @@ package ods.string.search.partition;
 
 import java.io.File;
 
+import ods.string.search.partition.splitsets.ExternalizableArrayList;
+import ods.string.search.partition.splitsets.ExternalizableListSet;
 import ods.string.search.partition.splitsets.Treap;
 
 import org.junit.Test;
@@ -71,5 +73,15 @@ public class ExternalMemorySkipListTest
 		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
 				"target/treap"), 1 / 35., 1000000000, new Treap<String>());
 		ExternalMemorySplittableSetTest.testPrefixIterators(tree);
+	}
+
+	@Test
+	public void testIteratorPrefixArray()
+	{
+		ExternalMemorySkipList<String> tree = new ExternalMemorySkipList<String>(new File(
+				"target/treap"), 1 / 20., 50000000, new ExternalizableListSet<String>(
+				new ExternalizableArrayList<String>(), false));
+
+		ExternalMemorySplittableSetTest.testPrefixWithManyMatches(tree);
 	}
 }

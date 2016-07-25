@@ -38,4 +38,13 @@ public class ExternalMemoryTrieTest
 				50, 100000000, 0);
 		ExternalMemorySplittableSetTest.testPrefixIterators(tree);
 	}
+
+	@Test
+	public void testIteratorManyPrefix()
+	{
+		ExternalMemoryTrie<String> tree = new ExternalMemoryTrie<String>(new File("target/treap"),
+				50, 100000000, 0);
+
+		ExternalMemorySplittableSetTest.testPrefixWithManyMatches(tree);
+	}
 }

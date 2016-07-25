@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -16,6 +18,7 @@ import java.util.Map.Entry;
 
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 
+import org.apache.commons.codec.binary.Hex;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 
@@ -60,6 +63,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	private long compressedBytes = 0;
 	private long serializationTime = 0;
 	private long diskWriteTime = 0;
+	private MessageDigest md5Hash;
 
 	public ExternalMemoryObjectCache(File directory)
 	{
@@ -82,6 +86,13 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		storageDirectory.mkdirs();
 		this.maxCacheMemorySize = cacheSize;
 		this.compress = compress;
+		try
+		{
+			md5Hash = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void register(String index, T data)
@@ -102,7 +113,8 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	{
 		Block block = cachedBlocks.remove(index);
 		inMemoryByteEstimate -= block.previousByteSize;
-		new File(storageDirectory, index).delete();
+		String blockFileName = convertBlockIdToFilename(index);
+		new File(storageDirectory, blockFileName).delete();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -114,7 +126,8 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 			if (block == null)
 			{
 				block = new Block(null);
-				File blockFile = new File(storageDirectory, blockId);
+				String blockFileName = convertBlockIdToFilename(blockId);
+				File blockFile = new File(storageDirectory, blockFileName);
 				if (blockFile.exists())
 				{
 					InputStream is = new FileInputStream(blockFile);
@@ -129,7 +142,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				cachedBlocks.put(blockId, block);
 			}
 
-			if (inMemoryByteEstimate > maxCacheMemorySize)
+			if (inMemoryByteEstimate > maxCacheMemorySize && cachedBlocks.size() > 1)
 			{
 				Iterator<Entry<String, Block>> iter = cachedBlocks.entrySet().iterator();
 				String flushBlockNum = iter.next().getKey();
@@ -159,7 +172,9 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				out.close();
 				serializationTime += System.currentTimeMillis() - startTime;
 				startTime = System.currentTimeMillis();
-				OutputStream fileOutput = new FileOutputStream(new File(storageDirectory, block));
+				String blockFileName = convertBlockIdToFilename(block);
+				OutputStream fileOutput = new FileOutputStream(new File(storageDirectory,
+						blockFileName));
 				fileOutput.write(bytes.toByteArray());
 				fileOutput.close();
 				diskWriteTime += System.currentTimeMillis() - startTime;
@@ -171,6 +186,11 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 			}
 		}
 		inMemoryByteEstimate -= flushBlock.previousByteSize;
+	}
+
+	private String convertBlockIdToFilename(String blockId)
+	{
+		return Hex.encodeHexString(md5Hash.digest(blockId.getBytes()));
 	}
 
 	public void close()

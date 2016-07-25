@@ -220,12 +220,57 @@ public class ExternalMemorySplittableSetTest
 		testPrefixIterators(tree);
 	}
 
+	@Test
+	public void testIteratorPrefixArray()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 20, 1000, new ExternalizableListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+
+		testPrefixIterators(tree);
+	}
+
+	@Test
+	public void testIteratorPrefixArray2()
+	{
+		ExternalMemorySplittableSet<String> tree = new ExternalMemorySplittableSet<String>(
+				new File("target/treap"), 150, 50000000, new ExternalizableListSet<String>(
+						new ExternalizableArrayList<String>(), false));
+
+		testPrefixWithManyMatches(tree);
+	}
+
+	static void testPrefixWithManyMatches(PrefixSearchableSet<String> tree)
+	{
+		for (int x = 0; x < 12000; x++)
+		{
+			assertEquals(x, tree.size());
+			tree.add(Utils.convertToFixedLengthString(x, 12));
+		}
+
+		for (int x = 0; x < 10000; x++)
+		{
+			String input = null;
+			input = Utils.convertToFixedLengthString((int) (x % (10000 / 100)), 10);
+			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
+					+ (char) (input.charAt(input.length() - 1) + 1));
+			int iterCount1 = 0;
+			while (iter.hasNext())
+			{
+				iter.next();
+				iterCount1++;
+			}
+			assertEquals(100, iterCount1);
+		}
+	}
+
 	static void testPrefixIterators(PrefixSearchableSet<String> tree)
 	{
 		for (int x = 0; x < 200; x++)
 		{
 			tree.add(x + "");
 		}
+		assertEquals(200, tree.size());
 
 		Iterator<String> iter = tree.iterator("1", "2");
 		int count = 0;
@@ -234,6 +279,15 @@ public class ExternalMemorySplittableSetTest
 			assertTrue(iter.next().startsWith("1"));
 			count++;
 		}
-		assertTrue(count > 100);
+		assertEquals(111, count);
+
+		iter = tree.iterator("10", "11");
+		count = 0;
+		while (iter.hasNext())
+		{
+			assertTrue(iter.next().startsWith("10"));
+			count++;
+		}
+		assertEquals(11, count);
 	}
 }

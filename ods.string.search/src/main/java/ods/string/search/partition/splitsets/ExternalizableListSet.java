@@ -82,6 +82,9 @@ public class ExternalizableListSet<T extends Serializable & Comparable<T>> imple
 
 	private int linearFind(T val)
 	{
+		if (val == null)
+			return -linkedList.size() - 1;
+
 		int result = 0;
 		Iterator<T> iter = linkedList.iterator();
 		while (iter.hasNext())

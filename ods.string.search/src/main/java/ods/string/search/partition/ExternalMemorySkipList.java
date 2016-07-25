@@ -6,7 +6,6 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.Random;
 
 import ods.string.search.PrefixSearchableSet;
@@ -77,8 +76,8 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	public ExternalMemorySkipList(File storageDirectory)
 	{
 		promotionProbability = 1. / 35.;
-		partitionImplementation = new ExternalizableListSet<T>(
-				new ExternalizableLinkedList<T>(), true);
+		partitionImplementation = new ExternalizableListSet<T>(new ExternalizableLinkedList<T>(),
+				true);
 		init(storageDirectory, 1000000000);
 	}
 
@@ -100,7 +99,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 
 	private void init(File storageDirectory, long cacheSize)
 	{
-		if (listCache != null)
+		if (listCache == null)
 			listCache = new ExternalMemoryObjectCache<SubList<T>>(storageDirectory, cacheSize, true);
 		maxHeight = 1;
 		SubList<T> root = new SubList<T>(partitionImplementation);
@@ -333,91 +332,76 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		return new EMSkipIterator(from, to);
 	}
 
-	private class LowestSubListEntry implements Comparable<LowestSubListEntry>
+	private class EMSkipIterator implements Iterator<T>
 	{
 		public SubList<T> subList;
 		public Iterator<T> iter;
-		public T elem;
-
-		public LowestSubListEntry(SubList<T> subList, Iterator<T> iter, T elem)
-		{
-			this.subList = subList;
-			this.iter = iter;
-			this.elem = elem;
-		}
-
-		@Override
-		public int compareTo(LowestSubListEntry arg0)
-		{
-			return elem.compareTo(arg0.elem);
-		}
-
-		public String toString()
-		{
-			return elem.toString();
-		}
-	}
-
-	private class EMSkipIterator implements Iterator<T>
-	{
-		private PriorityQueue<LowestSubListEntry> nextSmallestEntryQueue = new PriorityQueue<LowestSubListEntry>();
 		private T lastResult;
 
 		private T endValue;
 
 		public EMSkipIterator()
 		{
-			for (int x = 0; x < maxHeight; x++)
-			{
-				SubList<T> subList = listCache.get("-" + (x + 1));
-				Iterator<T> iter = subList.iterator();
-				LowestSubListEntry newSubListEntry = new LowestSubListEntry(subList, iter, null);
-				if (getNextEntry(newSubListEntry))
-					nextSmallestEntryQueue.add(newSubListEntry);
-			}
+			subList = listCache.get("-1");
+			iter = subList.iterator();
 		}
 
 		public EMSkipIterator(T startValue, T endValue)
 		{
+			lastResult = startValue;
 			this.endValue = endValue;
 
 			ArrayList<ListLayerEntry> findPath = new ArrayList<ListLayerEntry>();
 			find(startValue, listCache.get("-" + maxHeight), maxHeight, "", findPath);
-
-			for (ListLayerEntry entry : findPath)
+			String partitionKey = findPath.get(0).listPartitionKey;
+			if (!partitionKey.endsWith("-1"))
 			{
-				SubList<T> list = listCache.get(entry.listPartitionKey);
-
-				LowestSubListEntry newSubListEntry = new LowestSubListEntry(list,
-						list.structure.iterator(startValue, endValue), null);
-				if (getNextEntry(newSubListEntry))
-					nextSmallestEntryQueue.add(newSubListEntry);
+				int lastDashIndex = partitionKey.lastIndexOf("-");
+				partitionKey = partitionKey.substring(0, lastDashIndex) + "-1";
 			}
-
-			int underMatchHeight = maxHeight - findPath.size();
-			for (int y = underMatchHeight; y >= 1; y--)
-			{
-				SubList<T> subList = listCache.get(startValue.toString() + "-" + y);
-				Iterator<T> iter = subList.iterator();
-				LowestSubListEntry newSubListEntry = new LowestSubListEntry(subList, iter, null);
-				if (getNextEntry(newSubListEntry))
-					nextSmallestEntryQueue.add(newSubListEntry);
-			}
+			subList = listCache.get(partitionKey);
+			iter = subList.structure.iterator(lastResult, endValue);
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public boolean hasNext()
 		{
-			return nextSmallestEntryQueue.size() > 0;
+			if (iter != null && !iter.hasNext() && subList.nextPartitionId != null)
+			{
+				int lastDashIndex = subList.nextPartitionId.lastIndexOf("-");
+				String partitionIdStrVal = subList.nextPartitionId.substring(0, lastDashIndex);
+				T partitionIdVal;
+				try
+				{
+					partitionIdVal = (T) lastResult.getClass().getDeclaredConstructor(String.class)
+							.newInstance(partitionIdStrVal);
+					if (endValue == null || partitionIdVal.compareTo(endValue) < 0)
+					{
+						lastResult = partitionIdVal;
+						iter = null;
+					}
+				} catch (Exception e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
+
+			return iter == null || iter.hasNext();
 		}
 
 		@Override
 		public T next()
 		{
-			LowestSubListEntry nextEntry = nextSmallestEntryQueue.remove();
-			lastResult = nextEntry.elem;
-			if (getNextEntry(nextEntry))
-				nextSmallestEntryQueue.add(nextEntry);
+			T result = null;
+			if (iter == null)
+			{
+				result = lastResult;
+				subList = listCache.get(subList.nextPartitionId);
+				iter = subList.structure.iterator(lastResult, endValue);
+			} else
+				result = iter.next();
+			lastResult = result;
 			return lastResult;
 		}
 
@@ -425,33 +409,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		public void remove()
 		{
 			throw new UnsupportedOperationException();
-		}
-
-		private boolean getNextEntry(LowestSubListEntry subList)
-		{
-			while (subList.subList.nextPartitionId != null || subList.iter.hasNext())
-			{
-				if (subList.iter.hasNext())
-				{
-					subList.elem = subList.iter.next();
-					if (endValue != null && subList.elem.compareTo(endValue) >= 0)
-					{
-						subList.elem = null;
-						return false;
-					}
-					return true;
-				} else if (subList.subList.nextPartitionId != null)
-				{
-					subList.subList = listCache.get(subList.subList.nextPartitionId);
-					subList.iter = subList.subList.iterator();
-				} else
-				{
-					subList.elem = null;
-					return false;
-				}
-			}
-
-			return false;
 		}
 	}
 
