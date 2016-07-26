@@ -228,4 +228,32 @@ public class ExternalizableListSet<T extends Serializable & Comparable<T>> imple
 	{
 		return new ExternalizableListSet<T>(this);
 	}
+
+	@Override
+	public T lower(T val)
+	{
+		int index = findIndex(val);
+		if (index < 0)
+			index = Math.abs(index) - 2;
+		else
+			index--;
+		if (index < 0)
+			return null;
+		else
+			return linkedList.get(index);
+	}
+
+	@Override
+	public T higher(T val)
+	{
+		int index = findIndex(val);
+		if (index < 0)
+			index = Math.abs(index) - 1;
+		else
+			index++;
+		if (index >= linkedList.size())
+			return null;
+		else
+			return linkedList.get(index);
+	}
 }

@@ -54,7 +54,7 @@ public class ExternalizableArrayList<T extends Serializable> extends ArrayList<T
 	public void add(int index, T element)
 	{
 		if (bytesPerNodeWithData == -1)
-			bytesPerNodeWithData = Treap.getObjectBaseSize(element.getClass()) + BYTES_PER_NODE;
+			bytesPerNodeWithData = Treap.getObjectBaseSize(element) + BYTES_PER_NODE;
 		dirty = true;
 		dataBytesEstimate += element.toString().length();
 		super.add(index, element);

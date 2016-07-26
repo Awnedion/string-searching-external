@@ -53,16 +53,24 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		while ((result = curTrie.add(valueAsBytes)) > 0)
 			curTrie = trieCache.get(getTrieIdFromBytes(valueAsBytes, result));
 
-		if (result == 0 && curTrie.r.subtreeSize > maxSetSize)
+		if (result == 0)
 		{
-			BinaryPatriciaTrie<T> newTrie = (BinaryPatriciaTrie<T>) curTrie.split(u);
-			trieCache.register(getTrieIdFromBytes(newTrie.r.label, newTrie.r.bitsUsed), newTrie);
+			splitIfNecessary(curTrie);
 		}
 
 		if (result == 0)
 			size++;
 
 		return result == 0;
+	}
+
+	private void splitIfNecessary(BinaryPatriciaTrie<T> curTrie)
+	{
+		if (curTrie.r.subtreeSize > maxSetSize)
+		{
+			BinaryPatriciaTrie<T> newTrie = (BinaryPatriciaTrie<T>) curTrie.split(null);
+			trieCache.register(getTrieIdFromBytes(newTrie.r.label, newTrie.r.bitsUsed), newTrie);
+		}
 	}
 
 	private String getTrieIdFromBytes(byte[] value, int bitsUsed)
@@ -107,6 +115,8 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 				BinaryPatriciaTrie<T> childToMerge = trieCache.get(childTrieId);
 				curTrie.merge(childToMerge);
 				trieCache.unregister(childTrieId);
+
+				splitIfNecessary(curTrie);
 
 				System.out.println("Set Merge performed: " + beforeSize + " "
 						+ curTrie.r.subtreeSize);

@@ -89,7 +89,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		u.x = x;
 		u.p = rand.nextInt();
 		if (bytesPerNodeWithData == -1)
-			bytesPerNodeWithData = getObjectBaseSize(x.getClass()) + BYTES_PER_NODE;
+			bytesPerNodeWithData = getObjectBaseSize(x) + BYTES_PER_NODE;
 		return add(u, startingNode);
 	}
 
@@ -696,6 +696,28 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		return w;
 	}
 
+	/**
+	 * Find the node that follows w in a reverse in-order traversal
+	 * 
+	 * @param w
+	 * @return the node that follows w in a reverse in-order traversal
+	 */
+	public Node<T> prevNode(Node<T> w)
+	{
+		if (w.left != nil)
+		{
+			w = w.left;
+			while (w.right != nil)
+				w = w.right;
+		} else
+		{
+			while (w.parent != nil && w.parent.right != w)
+				w = w.parent;
+			w = w.parent;
+		}
+		return w;
+	}
+
 	public boolean contains(T x)
 	{
 		Node<T> n = findLast(x);
@@ -721,10 +743,12 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		return (r == null ? 0 : r.size) * bytesPerNodeWithData + (dataBytesEstimate << 1) + 96;
 	}
 
-	public static int getObjectBaseSize(Class<?> obj)
+	public static int getObjectBaseSize(Object obj)
 	{
-		if (obj.equals(String.class))
+		if (obj instanceof String)
 			return 64;
+		else if (obj instanceof ExternalizableMemoryObject)
+			return (int) ((ExternalizableMemoryObject) obj).getByteSize();
 		else
 			return 24;
 	}
@@ -804,5 +828,33 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	public SplittableSet<T> createNewSet()
 	{
 		return new Treap<T>(this);
+	}
+
+	@Override
+	public T lower(T val)
+	{
+		Node<T> node = findLast(val);
+		if (node.x.compareTo(val) < 0)
+			return node.x;
+		else
+			node = prevNode(node);
+
+		if (node != null)
+			return node.x;
+		return null;
+	}
+
+	@Override
+	public T higher(T val)
+	{
+		Node<T> node = findLast(val);
+		if (node.x.compareTo(val) > 0)
+			return node.x;
+		else
+			node = nextNode(node);
+
+		if (node != null)
+			return node.x;
+		return null;
 	}
 }

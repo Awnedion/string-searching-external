@@ -835,13 +835,13 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	@Override
 	public T locateMiddleValue()
 	{
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public T floor(T val)
 	{
-		return null;
+		throw new UnsupportedOperationException();
 	}
 
 	public String toString()
@@ -872,5 +872,17 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		BinaryPatriciaTrie<T> result = new BinaryPatriciaTrie<T>();
 		result.minPartitionDepth = minPartitionDepth;
 		return result;
+	}
+
+	@Override
+	public T lower(T val)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public T higher(T val)
+	{
+		throw new UnsupportedOperationException();
 	}
 }

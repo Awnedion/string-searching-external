@@ -15,5 +15,9 @@ public interface SplittableSet<T extends Comparable<T> & Serializable> extends
 
 	T floor(T val);
 
+	T lower(T val);
+
+	T higher(T val);
+
 	SplittableSet<T> createNewSet();
 }

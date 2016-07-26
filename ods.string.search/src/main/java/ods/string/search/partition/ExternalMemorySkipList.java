@@ -1,6 +1,8 @@
 package ods.string.search.partition;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -22,35 +24,37 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	{
 		private static final long serialVersionUID = -309297143139643805L;
 
-		public String nextPartitionId;
-		public String prevPartitionId;
+		private String nextPartitionId;
+		private String prevPartitionId;
 		public SplittableSet<T> structure;
+		private transient boolean isDirty = false;
 
-		@SuppressWarnings("unchecked")
 		public SubList(SplittableSet<T> type)
 		{
-			try
-			{
-				Class<? extends SplittableSet<T>> implClass = (Class<? extends SplittableSet<T>>) type
-						.getClass();
-				this.structure = implClass.getConstructor(implClass).newInstance(type);
-			} catch (Exception e)
-			{
-				throw new RuntimeException(e);
-			}
+			this.structure = type.createNewSet();
 		}
 
 		@Override
 		public long getByteSize()
 		{
 			// 16 for class, 8 for pointer to structure, 64*2 for strings IDs
-			return structure.getByteSize() + 152;
+			long result = 24;
+			if (nextPartitionId == null)
+				result += 8;
+			else
+				result += 64 + (nextPartitionId.length() << 1);
+
+			if (prevPartitionId == null)
+				result += 8;
+			else
+				result += 64 + (prevPartitionId.length() << 1);
+			return structure.getByteSize() + result;
 		}
 
 		@Override
 		public boolean isDirty()
 		{
-			return structure.isDirty();
+			return structure.isDirty() || isDirty;
 		}
 
 		@Override
@@ -62,6 +66,25 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		public long size()
 		{
 			return ((PrefixSearchableSet<?>) structure).size();
+		}
+
+		public void setNextPartitionId(String nextPartitionId)
+		{
+			this.nextPartitionId = nextPartitionId;
+			isDirty = true;
+		}
+
+		public void setPrevPartitionId(String prevPartitionId)
+		{
+			this.prevPartitionId = prevPartitionId;
+			isDirty = true;
+		}
+
+		private void readObject(ObjectInputStream inputStream) throws IOException,
+				ClassNotFoundException
+		{
+			inputStream.defaultReadObject();
+			isDirty = false;
 		}
 	}
 
@@ -125,7 +148,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 				ListLayerEntry listLayerEntry = insertionPath.get(x);
 				if (!(promotion = promoteOrInsert(u,
 						listCache.get(listLayerEntry.listPartitionKey),
-						listLayerEntry.listPartitionKey, listLayerEntry.index, x + 1)))
+						listLayerEntry.listPartitionKey, x + 1)))
 					break;
 			}
 			size++;
@@ -133,7 +156,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			{
 				maxHeight++;
 				SubList<T> newRoot = new SubList<T>(partitionImplementation);
-				addToCollection(u, newRoot, 0);
+				addToCollection(u, newRoot);
 				listCache.register("-" + maxHeight, newRoot);
 			}
 			return true;
@@ -142,12 +165,12 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		return false;
 	}
 
-	private void addToCollection(T u, SubList<T> subList, int suggestedIndex)
+	private void addToCollection(T u, SubList<T> subList)
 	{
 		subList.structure.add(u);
 	}
 
-	private boolean promoteOrInsert(T u, SubList<T> startPartition, String startPartitionId, int x,
+	private boolean promoteOrInsert(T u, SubList<T> startPartition, String startPartitionId,
 			int height)
 	{
 		boolean promote = rand.nextDouble() < promotionProbability;
@@ -158,19 +181,19 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			String newPartitionId = u.toString() + "-" + height;
 
 			listCache.register(newPartitionId, newPartition);
-			newPartition.nextPartitionId = startPartition.nextPartitionId;
-			startPartition.nextPartitionId = newPartitionId;
-			newPartition.prevPartitionId = startPartitionId;
+			newPartition.setNextPartitionId(startPartition.nextPartitionId);
+			startPartition.setNextPartitionId(newPartitionId);
+			newPartition.setPrevPartitionId(startPartitionId);
 
 			if (newPartition.nextPartitionId != null)
 			{
 				SubList<T> afterPartition = listCache.get(newPartition.nextPartitionId);
-				afterPartition.prevPartitionId = newPartitionId;
+				afterPartition.setPrevPartitionId(newPartitionId);
 			}
 			return true;
 		} else
 		{
-			addToCollection(u, startPartition, x);
+			addToCollection(u, startPartition);
 		}
 		return false;
 	}
@@ -192,12 +215,12 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 				SubList<T> toBeMovedPartition = listCache.get(deletingPartitionId);
 				SubList<T> destinationPartition = listCache.get(toBeMovedPartition.prevPartitionId);
 				destinationPartition.structure.merge(toBeMovedPartition.structure);
-				destinationPartition.nextPartitionId = toBeMovedPartition.nextPartitionId;
+				destinationPartition.setNextPartitionId(toBeMovedPartition.nextPartitionId);
 				if (toBeMovedPartition.nextPartitionId != null)
 				{
 					SubList<T> afterMovedPartition = listCache
 							.get(toBeMovedPartition.nextPartitionId);
-					afterMovedPartition.prevPartitionId = toBeMovedPartition.prevPartitionId;
+					afterMovedPartition.setPrevPartitionId(toBeMovedPartition.prevPartitionId);
 				}
 				listCache.unregister(deletingPartitionId);
 			}
@@ -224,12 +247,10 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 
 	private class ListLayerEntry
 	{
-		public int index;
 		public String listPartitionKey;
 
-		public ListLayerEntry(String listPartitionKey, int index)
+		public ListLayerEntry(String listPartitionKey)
 		{
-			this.index = index;
 			this.listPartitionKey = listPartitionKey;
 		}
 	}
@@ -262,7 +283,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 					if (u.equals(floorVal))
 					{
 						if (layerTraversalPath != null)
-							layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height, x));
+							layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height));
 						return true;
 					}
 				} else
@@ -310,7 +331,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		}
 
 		if (layerTraversalPath != null)
-			layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height, x));
+			layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height));
 		return result;
 	}
 
@@ -339,6 +360,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		private T lastResult;
 
 		private T endValue;
+		private Constructor<? extends Comparable<T>> constructorByString;
 
 		public EMSkipIterator()
 		{
@@ -374,8 +396,10 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 				T partitionIdVal;
 				try
 				{
-					partitionIdVal = (T) lastResult.getClass().getDeclaredConstructor(String.class)
-							.newInstance(partitionIdStrVal);
+					if (constructorByString == null)
+						constructorByString = (Constructor<? extends Comparable<T>>) lastResult
+								.getClass().getDeclaredConstructor(String.class);
+					partitionIdVal = (T) constructorByString.newInstance(partitionIdStrVal);
 					if (endValue == null || partitionIdVal.compareTo(endValue) < 0)
 					{
 						lastResult = partitionIdVal;

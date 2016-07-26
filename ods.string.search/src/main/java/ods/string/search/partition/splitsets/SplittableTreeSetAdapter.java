@@ -187,4 +187,16 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 	{
 		return new SplittableTreeSetAdapter<T>(this);
 	}
+
+	@Override
+	public T lower(T val)
+	{
+		return adaptee.lower(val);
+	}
+
+	@Override
+	public T higher(T val)
+	{
+		return adaptee.higher(val);
+	}
 }

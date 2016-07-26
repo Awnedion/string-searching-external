@@ -1,14 +1,19 @@
 package ods.string.search;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import ods.string.search.partition.EMPrefixSearchableSet;
 import ods.string.search.partition.ExternalMemoryObjectCache;
@@ -23,7 +28,7 @@ public class PerformanceReportITCase
 {
 	private enum InputType
 	{
-		SEQUENTIAL, RANDOM
+		SEQUENTIAL, RANDOM, WORDS
 	}
 
 	private class ReportCase
@@ -94,7 +99,7 @@ public class PerformanceReportITCase
 		writer.close();
 	}
 
-	private void warmUpVm(int insertLimit, int searchLimit, int prefixLimit)
+	private void warmUpVm(int insertLimit, int searchLimit, int prefixLimit) throws Exception
 	{
 		File warmUpDir = new File("target/warmUp");
 		Utils.deleteRecursively(warmUpDir);
@@ -158,21 +163,46 @@ public class PerformanceReportITCase
 
 	private ArrayList<Double> fillTreeRandomly(EMPrefixSearchableSet<String> tree, long sizeLimit,
 			long searchLimit, long prefixSearchLimit, Random rand, InputType inputType)
-	{// TODO replace reflections with interface call
+			throws Exception
+	{
 
+		Pattern tokenPat = Pattern.compile("(\\S+)");
 		ArrayList<Double> resultMetrics = new ArrayList<Double>(50);
 		ArrayList<String> insertionStrings = new ArrayList<String>((int) (sizeLimit + 2));
-		if (inputType.equals(InputType.RANDOM))
+		if (inputType.equals(InputType.RANDOM) || inputType.equals(InputType.WORDS))
 		{
 			HashSet<String> insertedStrings = new HashSet<String>();
-			while (insertionStrings.size() < sizeLimit)
+			if (inputType.equals(InputType.RANDOM))
 			{
-				String newInsert = Utils.generateRandomString(rand, 3, 12);
-				if (!insertedStrings.contains(newInsert))
+				while (insertionStrings.size() < sizeLimit)
 				{
-					insertedStrings.add(newInsert);
-					insertionStrings.add(newInsert);
+					String newInsert = Utils.generateRandomString(rand, 3, 12);
+					if (!insertedStrings.contains(newInsert))
+					{
+						insertedStrings.add(newInsert);
+						insertionStrings.add(newInsert);
+					}
 				}
+			} else
+			{
+				BufferedReader reader = new BufferedReader(new InputStreamReader(
+						new GZIPInputStream(getClass()
+								.getResourceAsStream("/multiLangWords.txt.gz"))));
+				Matcher m = null;
+				while (insertionStrings.size() < sizeLimit)
+				{
+					while (m == null || !m.find())
+					{
+						m = tokenPat.matcher(reader.readLine());
+					}
+					String newInsert = m.group(1);
+					if (!insertedStrings.contains(newInsert))
+					{
+						insertedStrings.add(newInsert);
+						insertionStrings.add(newInsert);
+					}
+				}
+				reader.close();
 			}
 		}
 
@@ -188,7 +218,7 @@ public class PerformanceReportITCase
 				System.out.println(x + " insert operations, created in "
 						+ (System.currentTimeMillis() - startTime) + "ms");
 			}
-			if (inputType.equals(InputType.RANDOM))
+			if (inputType.equals(InputType.RANDOM) || inputType.equals(InputType.WORDS))
 				tree.add(insertionStrings.get(x));
 			else if (inputType.equals(InputType.SEQUENTIAL))
 			{
@@ -218,6 +248,12 @@ public class PerformanceReportITCase
 		resultMetrics.add(Utils.trimDecimals((double) serializationTime / totalInsertionTime, 3));
 		resultMetrics.add(Utils.trimDecimals((double) diskWriteTime / totalInsertionTime, 3));
 
+		BufferedReader wordListReader = null;
+		Matcher m = null;
+		if (inputType.equals(InputType.WORDS))
+			wordListReader = new BufferedReader(new InputStreamReader(new GZIPInputStream(
+					getClass().getResourceAsStream("/mergedBooks.txt.gz"))));
+
 		System.gc();
 
 		reportInterval = searchLimit / 8;
@@ -239,12 +275,28 @@ public class PerformanceReportITCase
 					input = insertionStrings.get(rand.nextInt((int) sizeLimit));
 			} else if (inputType.equals(InputType.SEQUENTIAL))
 				input = Utils.convertToFixedLengthString((int) (x % sizeLimit), 12);
+			else if (inputType.equals(InputType.WORDS))
+			{
+				while (m == null || !m.find())
+				{
+					m = tokenPat.matcher(wordListReader.readLine());
+				}
+				input = m.group(1);
+			}
 
 			tree.contains(input);
 		}
 		resultMetrics.add(convertMillisToSeconds(System.currentTimeMillis() - startTime));
 		System.out.println(searchLimit + " find operations, performed in "
 				+ (System.currentTimeMillis() - startTime) + "ms");
+
+		if (wordListReader != null)
+		{
+			wordListReader.close();
+			m = null;
+			wordListReader = new BufferedReader(new InputStreamReader(new GZIPInputStream(
+					getClass().getResourceAsStream("/mergedBooks.txt.gz"))));
+		}
 
 		System.gc();
 
@@ -272,6 +324,17 @@ public class PerformanceReportITCase
 				}
 			} else if (inputType.equals(InputType.SEQUENTIAL))
 				input = Utils.convertToFixedLengthString((int) (x % (sizeLimit / 100)), 10);
+			else if (inputType.equals(InputType.WORDS))
+			{
+				while (input == null || input.length() < 3)
+				{
+					while (m == null || !m.find())
+					{
+						m = tokenPat.matcher(wordListReader.readLine());
+					}
+					input = m.group(1).substring(0, m.group(1).length() - 1);
+				}
+			}
 			Iterator<String> iter = tree.iterator(input, input.substring(0, input.length() - 1)
 					+ (char) (input.charAt(input.length() - 1) + 1));
 			while (iter.hasNext())
@@ -285,6 +348,9 @@ public class PerformanceReportITCase
 		System.out.println(prefixSearchLimit + " prefix search operations, " + iterationCount
 				+ " elements returned, performed in " + (System.currentTimeMillis() - startTime)
 				+ "ms");
+
+		if (wordListReader != null)
+			wordListReader.close();
 
 		// printSpaceStats(tree);
 
@@ -321,6 +387,8 @@ public class PerformanceReportITCase
 				input = insertionStrings.get(removeIndices.get(x));
 			else if (inputType.equals(InputType.SEQUENTIAL))
 				input = Utils.convertToFixedLengthString((int) (x % sizeLimit), 12);
+			else if (inputType.equals(InputType.WORDS))
+				input = insertionStrings.get(x);
 
 			tree.remove(input);
 		}
@@ -340,6 +408,10 @@ public class PerformanceReportITCase
 	public void testBTree() throws Exception
 	{
 		ArrayList<ReportCase> cases = new ArrayList<ReportCase>();
+		cases.add(new ReportCase("BTree-Word-ArrayList-100",
+				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 100, 50000000l,
+						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
+								false)), InputType.WORDS));
 		cases.add(new ReportCase("BTree-Seq-ArrayList-5000",
 				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 5000, 50000000l,
 						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
@@ -358,5 +430,16 @@ public class PerformanceReportITCase
 								false)), InputType.RANDOM));
 
 		printReport("bPlusTreePerformance", cases);
+	}
+
+	@Test
+	public void testNullSet() throws Exception
+	{
+		ArrayList<ReportCase> cases = new ArrayList<ReportCase>();
+		cases.add(new ReportCase("NullSet-Word", new NullSet<String>(), InputType.WORDS));
+		cases.add(new ReportCase("NullSet-Seq", new NullSet<String>(), InputType.SEQUENTIAL));
+		cases.add(new ReportCase("NullSet-Rand", new NullSet<String>(), InputType.RANDOM));
+
+		printReport("nullSetPerformance", cases);
 	}
 }

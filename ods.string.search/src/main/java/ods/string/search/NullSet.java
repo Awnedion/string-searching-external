@@ -1,10 +1,36 @@
 package ods.string.search;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Iterator;
 
-public class NullSet<T extends Comparable<T> & Serializable> implements PrefixSearchableSet<T>
+import ods.string.search.partition.EMPrefixSearchableSet;
+import ods.string.search.partition.ExternalMemoryObjectCache;
+import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
+
+public class NullSet<T extends Comparable<T> & Serializable> implements EMPrefixSearchableSet<T>
 {
+	private class NulIterator implements Iterator<T>
+	{
+
+		@Override
+		public boolean hasNext()
+		{
+			return false;
+		}
+
+		@Override
+		public T next()
+		{
+			return null;
+		}
+
+		@Override
+		public void remove()
+		{
+		}
+
+	}
 
 	@Override
 	public Iterator<T> iterator()
@@ -39,12 +65,24 @@ public class NullSet<T extends Comparable<T> & Serializable> implements PrefixSe
 	@Override
 	public Iterator<T> iterator(T from, T to)
 	{
-		return null;
+		return new NulIterator();
 	}
 
 	@Override
 	public void close()
 	{
+	}
+
+	@Override
+	public EMPrefixSearchableSet<T> createNewStructure(File newStorageDir)
+	{
+		return new NullSet<T>();
+	}
+
+	@Override
+	public ExternalMemoryObjectCache<? extends ExternalizableMemoryObject> getObjectCache()
+	{
+		return new ExternalMemoryObjectCache<>(new File("target/tmp"));
 	}
 
 }
