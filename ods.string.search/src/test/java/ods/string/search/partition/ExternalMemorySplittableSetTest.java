@@ -189,9 +189,11 @@ public class ExternalMemorySplittableSetTest
 		Random rand = new Random();
 		int count = rand.nextInt(100) + 25;
 		int endRange = rand.nextInt(74) + count;
+		int origCount = count;
 		for (Iterator<Integer> iter = tree.iterator(count, endRange); iter.hasNext();)
 		{
-			assertEquals(count, iter.next().intValue());
+			assertEquals("custom range [" + origCount + ", " + endRange + ") failed", count, iter
+					.next().intValue());
 			count++;
 		}
 

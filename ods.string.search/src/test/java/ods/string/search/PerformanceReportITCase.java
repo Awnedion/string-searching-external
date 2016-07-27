@@ -17,10 +17,16 @@ import java.util.zip.GZIPInputStream;
 
 import ods.string.search.partition.EMPrefixSearchableSet;
 import ods.string.search.partition.ExternalMemoryObjectCache;
+import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
+import ods.string.search.partition.ExternalMemoryTrie;
 import ods.string.search.partition.splitsets.ExternalizableArrayList;
+import ods.string.search.partition.splitsets.ExternalizableLinkedList;
 import ods.string.search.partition.splitsets.ExternalizableListSet;
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
+import ods.string.search.partition.splitsets.SplittableSet;
+import ods.string.search.partition.splitsets.SplittableTreeSetAdapter;
+import ods.string.search.partition.splitsets.Treap;
 
 import org.junit.Test;
 
@@ -47,9 +53,9 @@ public class PerformanceReportITCase
 
 	private void printReport(String reportName, List<ReportCase> cases) throws Exception
 	{
-		int insertLimit = 1200000;
+		int insertLimit = 1000000;
 		int searchLimit = 1600000;
-		int prefixLimit = 1000000;
+		int prefixLimit = 800000;
 		int removeLimit = (int) (insertLimit * 0.75);
 
 		warmUpVm(insertLimit, searchLimit, prefixLimit);
@@ -63,6 +69,9 @@ public class PerformanceReportITCase
 			ArrayList<ArrayList<Double>> rawAttempts = new ArrayList<ArrayList<Double>>();
 			for (int x = 0; x < 3; x++)
 			{
+				String resultName = rCase.name + "-rawIteration" + x;
+				System.out.println("Starting tests for " + resultName);
+
 				File curStorageDir = new File("target/" + rCase.name + "-" + x);
 				Utils.deleteRecursively(curStorageDir);
 
@@ -72,7 +81,8 @@ public class PerformanceReportITCase
 				ArrayList<Double> metrics = fillTreeRandomly(curImpl, insertLimit, searchLimit,
 						prefixLimit, rand, rCase.inputType);
 				curImpl.close();
-				writeResultMetrics(writer, rCase.name + "-rawIteration" + x, metrics);
+
+				writeResultMetrics(writer, resultName, metrics);
 
 				curImpl.close();
 				Utils.deleteRecursively(curStorageDir);
@@ -404,32 +414,187 @@ public class PerformanceReportITCase
 		return Utils.trimDecimals(millis / 1000., 2);
 	}
 
+	private class PartitionImplementation
+	{
+		public String name;
+		public SplittableSet<String> impl;
+
+		public PartitionImplementation(String name, SplittableSet<String> impl)
+		{
+			this.name = name;
+			this.impl = impl;
+		}
+	}
+
 	@Test
 	public void testBTree() throws Exception
 	{
 		ArrayList<ReportCase> cases = new ArrayList<ReportCase>();
-		cases.add(new ReportCase("BTree-Word-ArrayList-100",
-				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 100, 50000000l,
-						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
-								false)), InputType.WORDS));
-		cases.add(new ReportCase("BTree-Seq-ArrayList-5000",
-				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 5000, 50000000l,
-						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
-								false)), InputType.SEQUENTIAL));
-		cases.add(new ReportCase("BTree-Seq-ArrayList-15000",
-				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 15000, 50000000l,
-						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
-								false)), InputType.SEQUENTIAL));
-		cases.add(new ReportCase("BTree-Seq-ArrayList-25000",
-				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 25000, 50000000l,
-						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
-								false)), InputType.SEQUENTIAL));
-		cases.add(new ReportCase("BTree-Rand-ArrayList-70",
-				new ExternalMemorySplittableSet<String>(new File("target/tmp"), 70, 50000000l,
-						new ExternalizableListSet<String>(new ExternalizableArrayList<String>(),
-								false)), InputType.RANDOM));
+		File tmpDir = new File("target/tmp");
+
+		ArrayList<PartitionImplementation> partitionImpls = new ArrayList<PartitionImplementation>();
+		partitionImpls.add(new PartitionImplementation("ArrayList",
+				new ExternalizableListSet<String>(new ExternalizableArrayList<String>(), false)));
+		partitionImpls.add(new PartitionImplementation("Treap", new Treap<String>()));
+		partitionImpls.add(new PartitionImplementation("RBT",
+				new SplittableTreeSetAdapter<String>()));
+		partitionImpls.add(new PartitionImplementation("LinkedLinear",
+				new ExternalizableListSet<String>(new ExternalizableLinkedList<String>(), true)));
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("BTree-Seq-" + pi.name + "-5000",
+					new ExternalMemorySplittableSet<String>(tmpDir, 5000, 50000000l, pi.impl),
+					InputType.SEQUENTIAL));
+			cases.add(new ReportCase("BTree-Seq-" + pi.name + "-15000",
+					new ExternalMemorySplittableSet<String>(tmpDir, 15000, 50000000l, pi.impl),
+					InputType.SEQUENTIAL));
+			cases.add(new ReportCase("BTree-Seq-" + pi.name + "-25000",
+					new ExternalMemorySplittableSet<String>(tmpDir, 25000, 50000000l, pi.impl),
+					InputType.SEQUENTIAL));
+		}
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("BTree-Word-" + pi.name + "-50",
+					new ExternalMemorySplittableSet<String>(tmpDir, 50, 50000000l, pi.impl),
+					InputType.WORDS));
+			cases.add(new ReportCase("BTree-Word-" + pi.name + "-100",
+					new ExternalMemorySplittableSet<String>(tmpDir, 100, 50000000l, pi.impl),
+					InputType.WORDS));
+			cases.add(new ReportCase("BTree-Word-" + pi.name + "-200",
+					new ExternalMemorySplittableSet<String>(tmpDir, 200, 50000000l, pi.impl),
+					InputType.WORDS));
+		}
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-40",
+					new ExternalMemorySplittableSet<String>(tmpDir, 40, 50000000l, pi.impl),
+					InputType.RANDOM));
+			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-70",
+					new ExternalMemorySplittableSet<String>(tmpDir, 70, 50000000l, pi.impl),
+					InputType.RANDOM));
+			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-150",
+					new ExternalMemorySplittableSet<String>(tmpDir, 150, 50000000l, pi.impl),
+					InputType.RANDOM));
+		}
 
 		printReport("bPlusTreePerformance", cases);
+	}
+
+	@Test
+	public void testSkipList() throws Exception
+	{
+		ArrayList<ReportCase> cases = new ArrayList<ReportCase>();
+		File tmpDir = new File("target/tmp");
+
+		ArrayList<PartitionImplementation> partitionImpls = new ArrayList<PartitionImplementation>();
+		partitionImpls.add(new PartitionImplementation("ArrayList",
+				new ExternalizableListSet<String>(new ExternalizableArrayList<String>(), false)));
+		partitionImpls.add(new PartitionImplementation("Treap", new Treap<String>()));
+		partitionImpls.add(new PartitionImplementation("RBT",
+				new SplittableTreeSetAdapter<String>()));
+		partitionImpls.add(new PartitionImplementation("LinkedLinear",
+				new ExternalizableListSet<String>(new ExternalizableLinkedList<String>(), true)));
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("SkipList-Seq-" + pi.name + "-3000",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 3000., 50000000l, pi.impl),
+					InputType.SEQUENTIAL));
+			cases.add(new ReportCase("SkipList-Seq-" + pi.name + "-6000",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 6000., 50000000l, pi.impl),
+					InputType.SEQUENTIAL));
+			cases.add(new ReportCase("SkipList-Seq-" + pi.name + "-12000",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 12000., 50000000l, pi.impl),
+					InputType.SEQUENTIAL));
+		}
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("SkipList-Word-" + pi.name + "-50",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
+					InputType.WORDS));
+			cases.add(new ReportCase("SkipList-Word-" + pi.name + "-100",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
+					InputType.WORDS));
+			cases.add(new ReportCase("SkipList-Word-" + pi.name + "-200",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 200., 50000000l, pi.impl),
+					InputType.WORDS));
+		}
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-25",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 25., 50000000l, pi.impl),
+					InputType.RANDOM));
+			cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-50",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
+					InputType.RANDOM));
+			cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-100",
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
+					InputType.RANDOM));
+		}
+
+		printReport("skipListPerformance", cases);
+	}
+
+	@Test
+	public void testTrie() throws Exception
+	{
+		ArrayList<ReportCase> cases = new ArrayList<ReportCase>();
+		File tmpDir = new File("target/tmp");
+
+		ArrayList<PartitionImplementation> partitionImpls = new ArrayList<PartitionImplementation>();
+		partitionImpls.add(new PartitionImplementation("ArrayList",
+				new ExternalizableListSet<String>(new ExternalizableArrayList<String>(), false)));
+		// partitionImpls.add(new PartitionImplementation("Treap", new Treap<String>()));
+		// partitionImpls.add(new PartitionImplementation("RBT",
+		// new SplittableTreeSetAdapter<String>()));
+		// partitionImpls.add(new PartitionImplementation("LinkedLinear",
+		// new ExternalizableListSet<String>(new ExternalizableLinkedList<String>(), true)));
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-3000",
+					new ExternalMemoryTrie<String>(tmpDir, 3000, 50000000l, 0),
+					InputType.SEQUENTIAL));
+			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-6000",
+					new ExternalMemoryTrie<String>(tmpDir, 6000, 50000000l, 0),
+					InputType.SEQUENTIAL));
+			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-12000",
+					new ExternalMemoryTrie<String>(tmpDir, 12000, 50000000l, 0),
+					InputType.SEQUENTIAL));
+		}
+
+		// for (PartitionImplementation pi : partitionImpls)
+		// {
+		// cases.add(new ReportCase("SkipList-Word-" + pi.name + "-50",
+		// new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
+		// InputType.WORDS));
+		// cases.add(new ReportCase("SkipList-Word-" + pi.name + "-100",
+		// new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
+		// InputType.WORDS));
+		// cases.add(new ReportCase("SkipList-Word-" + pi.name + "-200",
+		// new ExternalMemorySkipList<String>(tmpDir, 1. / 200., 50000000l, pi.impl),
+		// InputType.WORDS));
+		// }
+		//
+		// for (PartitionImplementation pi : partitionImpls)
+		// {
+		// cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-25",
+		// new ExternalMemorySkipList<String>(tmpDir, 1. / 25., 50000000l, pi.impl),
+		// InputType.RANDOM));
+		// cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-50",
+		// new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
+		// InputType.RANDOM));
+		// cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-100",
+		// new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
+		// InputType.RANDOM));
+		// }
+
+		printReport("binaryPatPerformance", cases);
 	}
 
 	@Test
@@ -441,5 +606,22 @@ public class PerformanceReportITCase
 		cases.add(new ReportCase("NullSet-Rand", new NullSet<String>(), InputType.RANDOM));
 
 		printReport("nullSetPerformance", cases);
+	}
+
+	@Test
+	public void testDirSpam() throws Exception
+	{
+		File dir = new File("target/dirSpam");
+		Utils.deleteRecursively(dir);
+		dir.mkdirs();
+		long startTime = System.currentTimeMillis();
+		for (int x = 0; x < 10000000; x++)
+		{
+			if (x % 10000 == 0)
+				System.out.println(x + " create rate "
+						+ ((System.currentTimeMillis() - startTime) / (double) x));
+			new File(dir, x + "").createNewFile();
+		}
+		Utils.deleteRecursively(dir);
 	}
 }

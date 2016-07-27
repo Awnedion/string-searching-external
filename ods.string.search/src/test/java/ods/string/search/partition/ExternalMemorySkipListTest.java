@@ -2,14 +2,23 @@ package ods.string.search.partition;
 
 import java.io.File;
 
+import ods.string.search.Utils;
 import ods.string.search.partition.splitsets.ExternalizableArrayList;
 import ods.string.search.partition.splitsets.ExternalizableListSet;
 import ods.string.search.partition.splitsets.Treap;
 
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ExternalMemorySkipListTest
 {
+	@Before
+	public void setup()
+	{
+		Assert.assertTrue(Utils.deleteRecursively(new File("target/treap")));
+	}
+
 	@Test
 	public void testAddSearchRemoveEMSkipList()
 	{

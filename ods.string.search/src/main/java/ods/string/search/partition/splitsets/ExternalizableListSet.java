@@ -180,7 +180,8 @@ public class ExternalizableListSet<T extends Serializable & Comparable<T>> imple
 	@Override
 	public long getByteSize()
 	{
-		return linkedList.getByteSize();
+		// 16 base class, 24 class variables
+		return linkedList.getByteSize() + 40;
 	}
 
 	@Override

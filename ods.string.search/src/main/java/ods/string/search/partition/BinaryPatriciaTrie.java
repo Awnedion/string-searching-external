@@ -253,20 +253,10 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 	protected Node childTrieLabel;
 
-	private int minPartitionDepth;
-
 	public BinaryPatriciaTrie()
 	{
 		r = new Node(new byte[0]);
 		n = 0;
-		minPartitionDepth = 0;
-	}
-
-	public BinaryPatriciaTrie(int minPartitionDepth)
-	{
-		r = new Node(new byte[0]);
-		n = 0;
-		this.minPartitionDepth = minPartitionDepth;
 	}
 
 	/**
@@ -376,6 +366,12 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 	public byte[] convertToBytes(T x)
 	{
+		initTypeToByteConverter(x);
+		return converter.getBytes(x);
+	}
+
+	private void initTypeToByteConverter(T x)
+	{
 		if (converter == null)
 		{
 			if (x instanceof String)
@@ -383,7 +379,6 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			else if (x instanceof Integer)
 				converter = new IntegerConversion();
 		}
-		return converter.getBytes(x);
 	}
 
 	private SearchPoint findLastNode(byte[] s)
@@ -572,7 +567,8 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	@Override
 	public long getByteSize()
 	{
-		return dataBytesEstimate + r.subtreeSize * BYTES_PER_NODE;
+		// 16 base class, 24 BAConversion, 32 class variables
+		return dataBytesEstimate + r.subtreeSize * BYTES_PER_NODE + 72;
 	}
 
 	@Override
@@ -743,6 +739,11 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	@Override
 	public SplittableSet<T> split(T x)
 	{
+		return split(x, 0);
+	}
+
+	public SplittableSet<T> split(T x, int minPartitionDepth)
+	{
 		BinaryPatriciaTrie<T> result = new BinaryPatriciaTrie<T>();
 		result.converter = converter;
 
@@ -797,7 +798,6 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			n.subtreeSize -= result.r.subtreeSize;
 		result.r.bitsUsed = matchedLabel.bitsUsed;
 		result.r.label = Arrays.copyOf(matchedLabel.label, matchedLabel.label.length);
-		result.minPartitionDepth = minPartitionDepth;
 		childTrieLabel = matchedLabel;
 		dirty = true;
 
@@ -807,19 +807,23 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	@Override
 	public boolean merge(SplittableSet<T> t)
 	{
-		if (childTrieLabel == null)
-			return false;
-
 		BinaryPatriciaTrie<T> childTrie = (BinaryPatriciaTrie<T>) t;
-		SearchPoint pointer = findLastNode(childTrieLabel.label);
+		if (childTrieLabel != null
+				&& getCommonPrefixBits(childTrieLabel, childTrie.r) == childTrieLabel.bitsUsed)
+			childTrieLabel = childTrie.childTrieLabel;
+
+		SearchPoint pointer = findLastNode(childTrie.r.label);
 		Node parentOfPointer = pointer.lastMatchingNode.get(pointer.lastMatchingNode.size() - 2);
 		if (parentOfPointer.leftChild == pointer.getLastMatchingNode())
 			parentOfPointer.leftChild = childTrie.r;
 		else
 			parentOfPointer.rightChild = childTrie.r;
-		childTrieLabel.bitsUsed -= pointer.getLastMatchingNode().bitsUsed;
-		splitOnPrefix(childTrieLabel, childTrie.r);
-		childTrieLabel = childTrie.childTrieLabel;
+
+		// Change merged root node to be only an appended string instead of a full value string.
+		splitOnPrefix(
+				new Node(childTrie.r.label, childTrie.r.bitsUsed
+						- pointer.getLastMatchingNode().bitsUsed), childTrie.r);
+
 		dataBytesEstimate += childTrie.dataBytesEstimate;
 
 		pointer.lastMatchingNode.remove(pointer.lastMatchingNode.size() - 1);
@@ -870,7 +874,6 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	public SplittableSet<T> createNewSet()
 	{
 		BinaryPatriciaTrie<T> result = new BinaryPatriciaTrie<T>();
-		result.minPartitionDepth = minPartitionDepth;
 		return result;
 	}
 

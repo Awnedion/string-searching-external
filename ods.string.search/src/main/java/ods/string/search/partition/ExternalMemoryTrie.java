@@ -16,6 +16,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 	private ExternalMemoryObjectCache<BinaryPatriciaTrie<T>> trieCache;
 	private int maxSetSize = 100000;
 	private long size = 0;
+	private int minPartitionDepth;
 
 	public ExternalMemoryTrie(File storageDirectory)
 	{
@@ -23,6 +24,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 				100000000, true);
 		BinaryPatriciaTrie<T> root = new BinaryPatriciaTrie<T>();
 		trieCache.register("~", root);
+		minPartitionDepth = 0;
 	}
 
 	public ExternalMemoryTrie(File storageDirectory, int maxSetSize, long maxInMemoryBytes,
@@ -31,7 +33,8 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		this.maxSetSize = maxSetSize;
 		trieCache = new ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>(storageDirectory,
 				maxInMemoryBytes, true);
-		trieCache.register("~", new BinaryPatriciaTrie<T>(minPartitionDepth));
+		trieCache.register("~", new BinaryPatriciaTrie<T>());
+		this.minPartitionDepth = minPartitionDepth;
 	}
 
 	public ExternalMemoryTrie(File storageDirectory, ExternalMemoryTrie<T> baseConfig)
@@ -41,6 +44,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		BinaryPatriciaTrie<T> root = (BinaryPatriciaTrie<T>) baseConfig.trieCache.get("~")
 				.createNewSet();
 		trieCache.register("~", root);
+		minPartitionDepth = baseConfig.minPartitionDepth;
 	}
 
 	@Override
@@ -68,7 +72,8 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 	{
 		if (curTrie.r.subtreeSize > maxSetSize)
 		{
-			BinaryPatriciaTrie<T> newTrie = (BinaryPatriciaTrie<T>) curTrie.split(null);
+			BinaryPatriciaTrie<T> newTrie = (BinaryPatriciaTrie<T>) curTrie.split(null,
+					minPartitionDepth);
 			trieCache.register(getTrieIdFromBytes(newTrie.r.label, newTrie.r.bitsUsed), newTrie);
 		}
 	}
@@ -101,25 +106,66 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		byte[] valueAsBytes = curTrie.convertToBytes(x);
 		int result;
 
+		BinaryPatriciaTrie<T> parentTrie = null;
+		String curTrieId = "~";
 		while ((result = curTrie.remove(valueAsBytes)) > 0)
-			curTrie = trieCache.get(getTrieIdFromBytes(valueAsBytes, result));
+		{
+			parentTrie = curTrie;
+			curTrieId = getTrieIdFromBytes(valueAsBytes, result);
+			curTrie = trieCache.get(curTrieId);
+		}
 
 		if (result == 0)
 		{
 			size--;
-			if (curTrie.childTrieLabel != null && curTrie.r.subtreeSize < (maxSetSize >> 3))
+
+			/*
+			 * Merge this trie with another if it is smaller than maxSetSize/8 or
+			 * maxSetSize/(2^minPartitionDepth) if a min depth is being used.
+			 */
+			if ((curTrie.childTrieLabel != null || parentTrie != null)
+					&& curTrie.r.subtreeSize <= (maxSetSize >> Math.max(3, minPartitionDepth + 1)))
 			{
-				long beforeSize = curTrie.r.subtreeSize;
-				String childTrieId = getTrieIdFromBytes(curTrie.childTrieLabel.label,
-						curTrie.childTrieLabel.bitsUsed);
-				BinaryPatriciaTrie<T> childToMerge = trieCache.get(childTrieId);
-				curTrie.merge(childToMerge);
-				trieCache.unregister(childTrieId);
+				BinaryPatriciaTrie<T> topTrie;
+				BinaryPatriciaTrie<T> bottomTrie;
+				String bottomId;
 
-				splitIfNecessary(curTrie);
+				// Merge into either the parent or child trie. Preferring whichever is smaller.
+				if (parentTrie != null && curTrie.childTrieLabel != null)
+				{
+					String childTrieId = getTrieIdFromBytes(curTrie.childTrieLabel.label,
+							curTrie.childTrieLabel.bitsUsed);
+					BinaryPatriciaTrie<T> childTrie = trieCache.get(childTrieId);
+					if (parentTrie.n <= childTrie.n)
+					{
+						topTrie = parentTrie;
+						bottomTrie = curTrie;
+						bottomId = curTrieId;
+					} else
+					{
+						topTrie = curTrie;
+						bottomTrie = childTrie;
+						bottomId = childTrieId;
+					}
+				} else if (parentTrie != null)
+				{
+					topTrie = parentTrie;
+					bottomTrie = curTrie;
+					bottomId = curTrieId;
+				} else
+				{
+					topTrie = curTrie;
+					String childTrieId = getTrieIdFromBytes(curTrie.childTrieLabel.label,
+							curTrie.childTrieLabel.bitsUsed);
+					bottomTrie = trieCache.get(childTrieId);
+					bottomId = childTrieId;
+				}
 
-				System.out.println("Set Merge performed: " + beforeSize + " "
-						+ curTrie.r.subtreeSize);
+				topTrie.merge(bottomTrie);
+				trieCache.unregister(bottomId);
+
+				// Ensure the merge trie isn't larger than the maxSetSize.
+				splitIfNecessary(topTrie);
 			}
 		}
 		return result == 0;

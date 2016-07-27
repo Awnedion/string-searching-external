@@ -25,25 +25,19 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		}
 	};
 
-	@SuppressWarnings("rawtypes")
-	private static Node templateNil = null;
-
 	/**
 	 * A random number source
 	 */
-	private Random rand = new Random();
+	private transient Random rand = new Random();
 
 	private transient boolean dirty = true;
 	private long dataBytesEstimate = 0;
-	private int bytesPerNodeWithData = -1;
+	private transient int bytesPerNodeWithData = -1;
 
 	/**
 	 * The root of this tree
 	 */
 	protected Node<T> r;
-
-	@SuppressWarnings("unchecked")
-	private Node<T> nil = templateNil;
 
 	@SuppressWarnings("unchecked")
 	private Comparator<T> c = new DefaultComparator();
@@ -62,19 +56,16 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 
 	public Treap()
 	{
-		r = nil;
 	}
 
 	public Treap(Treap<T> template)
 	{
-		r = nil;
 		c = template.c;
 	}
 
 	public Treap(Comparator<T> c)
 	{
 		this.c = c;
-		r = nil;
 	}
 
 	public boolean add(T x)
@@ -96,7 +87,6 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	private Node<T> newNode()
 	{
 		Node<T> u = new Node<T>();
-		u.parent = u.left = u.right = nil;
 		return u;
 	}
 
@@ -128,7 +118,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	private boolean addChild(Node<T> p, Node<T> u)
 	{
-		if (p == nil)
+		if (p == null)
 		{
 			r = u; // inserting into empty tree
 		} else
@@ -155,7 +145,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		if (insert(u, startingNode))
 		{
 			Node<T> temp = u.parent;
-			while (temp != nil)
+			while (temp != null)
 			{
 				temp.size++;
 				temp = temp.parent;
@@ -177,7 +167,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	{
 		Node<T> w = u.right;
 		w.parent = u.parent;
-		if (w.parent != nil)
+		if (w.parent != null)
 		{
 			if (w.parent.left == u)
 			{
@@ -188,7 +178,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 			}
 		}
 		u.right = w.left;
-		if (u.right != nil)
+		if (u.right != null)
 		{
 			u.right.parent = u;
 		}
@@ -197,16 +187,16 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		if (u == r)
 		{
 			r = w;
-			r.parent = nil;
+			r.parent = null;
 		}
 
 		u.parent.size++;
-		if (u.left != nil)
+		if (u.left != null)
 		{
 			u.parent.size += u.left.size;
 		}
 		u.size--;
-		if (u.parent.right != nil)
+		if (u.parent.right != null)
 		{
 			u.size -= u.parent.right.size;
 		}
@@ -221,7 +211,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	{
 		Node<T> w = u.left;
 		w.parent = u.parent;
-		if (w.parent != nil)
+		if (w.parent != null)
 		{
 			if (w.parent.left == u)
 			{
@@ -232,7 +222,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 			}
 		}
 		u.left = w.right;
-		if (u.left != nil)
+		if (u.left != null)
 		{
 			u.left.parent = u;
 		}
@@ -241,16 +231,16 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		if (u == r)
 		{
 			r = w;
-			r.parent = nil;
+			r.parent = null;
 		}
 
 		u.parent.size++;
-		if (u.right != nil)
+		if (u.right != null)
 		{
 			u.parent.size += u.right.size;
 		}
 		u.size--;
-		if (u.parent.left != nil)
+		if (u.parent.left != null)
 		{
 			u.size -= u.parent.left.size;
 		}
@@ -258,7 +248,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 
 	public long size()
 	{
-		if (r == nil)
+		if (r == null)
 		{
 			return 0;
 		}
@@ -267,7 +257,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 
 	protected void bubbleUp(Node<T> u)
 	{
-		while (u.parent != nil && u.parent.p > u.p)
+		while (u.parent != null && u.parent.p > u.p)
 		{
 			if (u.parent.right == u)
 			{
@@ -277,7 +267,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 				rotateRight(u.parent);
 			}
 		}
-		if (u.parent == nil)
+		if (u.parent == null)
 		{
 			r = u;
 		}
@@ -286,7 +276,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	public boolean remove(T x)
 	{
 		Node<T> u = findLast(x);
-		if (u != nil && c.compare(u.x, x) == 0)
+		if (u != null && c.compare(u.x, x) == 0)
 		{
 			trickleDown(u);
 			splice(u);
@@ -300,7 +290,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	protected void splice(Node<T> u)
 	{
 		Node<T> s, p;
-		if (u.left != nil)
+		if (u.left != null)
 		{
 			s = u.left;
 		} else
@@ -310,7 +300,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		if (u == r)
 		{
 			r = s;
-			p = nil;
+			p = null;
 		} else
 		{
 			p = u.parent;
@@ -322,13 +312,13 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 				p.right = s;
 			}
 		}
-		if (s != nil)
+		if (s != null)
 		{
 			s.parent = p;
 		}
 
 		s = u;
-		while (s.parent != nil)
+		while (s.parent != null)
 		{
 			s = s.parent;
 			s.size--;
@@ -340,12 +330,12 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	protected void trickleDown(Node<T> u)
 	{
-		while (u.left != nil || u.right != nil)
+		while (u.left != null || u.right != null)
 		{
-			if (u.left == nil)
+			if (u.left == null)
 			{
 				rotateLeft(u);
-			} else if (u.right == nil)
+			} else if (u.right == null)
 			{
 				rotateRight(u);
 			} else if (u.left.p < u.right.p)
@@ -371,7 +361,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	public SplittableSet<T> split(T x)
 	{
-		if (r == nil)
+		if (r == null)
 			return new Treap<T>();
 
 		Node<T> treeNode = findLast(x);
@@ -382,16 +372,16 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 			treeNode.p = Integer.MIN_VALUE;
 			bubbleUp(treeNode);
 			r = treeNode.left;
-			if (r != nil)
+			if (r != null)
 			{
-				r.parent = nil;
+				r.parent = null;
 			}
 			t.r = treeNode;
-			if (t.r.left != nil)
+			if (t.r.left != null)
 			{
 				t.r.size -= t.r.left.size;
 			}
-			treeNode.left = nil;
+			treeNode.left = null;
 			treeNode.p = origP;
 			t.trickleDown(treeNode);
 			t.bubbleUp(treeNode);
@@ -403,14 +393,14 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 			add(splitNode, r);
 			bubbleUp(splitNode);
 			r = splitNode.left;
-			if (r != nil)
+			if (r != null)
 			{
-				r.parent = nil;
+				r.parent = null;
 			}
 			t.r = splitNode.right;
-			if (t.r != nil)
+			if (t.r != null)
 			{
-				t.r.parent = nil;
+				t.r.parent = null;
 			}
 		}
 
@@ -437,8 +427,8 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 
 	private Node<T> findLast(T x, Node<T> initialNode)
 	{
-		Node<T> w = initialNode, prev = nil;
-		while (w != nil)
+		Node<T> w = initialNode, prev = null;
+		while (w != null)
 		{
 			prev = w;
 			int comp = c.compare(x, w.x);
@@ -467,10 +457,10 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	{
 		Treap<T> t = (Treap<T>) set;
 
-		if (t.r == nil)
+		if (t.r == null)
 		{
 			return true;
-		} else if (r == nil)
+		} else if (r == null)
 		{
 			Node<T> temp = r;
 			r = t.r;
@@ -483,12 +473,12 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		}
 
 		Node<T> largestNode = r;
-		while (largestNode.right != nil)
+		while (largestNode.right != null)
 		{
 			largestNode = largestNode.right;
 		}
 		Node<T> smallestNode = t.r;
-		while (smallestNode.left != nil)
+		while (smallestNode.left != null)
 		{
 			smallestNode = smallestNode.left;
 		}
@@ -507,7 +497,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		newRoot.p = Integer.MAX_VALUE;
 		trickleDown(newRoot);
 		splice(newRoot);
-		t.r = nil;
+		t.r = null;
 		dirty = true;
 		t.dirty = true;
 		dataBytesEstimate += t.dataBytesEstimate;
@@ -532,10 +522,10 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 
 		int currentRank = 0;
 		Node<T> currentNode = r;
-		while (currentNode != nil)
+		while (currentNode != null)
 		{
 			int leftSize = 0;
-			if (currentNode.left != nil)
+			if (currentNode.left != null)
 			{
 				leftSize = currentNode.left.size;
 			}
@@ -568,7 +558,7 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 
 		public boolean hasNext()
 		{
-			return w != nil && (endValue == nil || c.compare(w.x, endValue) < 0);
+			return w != null && (endValue == null || c.compare(w.x, endValue) < 0);
 		}
 
 		public T next()
@@ -616,9 +606,9 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	public Node<T> firstNode()
 	{
 		Node<T> w = r;
-		if (w == nil)
-			return nil;
-		while (w.left != nil)
+		if (w == null)
+			return null;
+		while (w.left != null)
 			w = w.left;
 		return w;
 	}
@@ -630,8 +620,8 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	protected Node<T> findGENode(T x)
 	{
-		Node<T> w = r, z = nil;
-		while (w != nil)
+		Node<T> w = r, z = null;
+		while (w != null)
 		{
 			int comp = c.compare(x, w.x);
 			if (comp < 0)
@@ -655,8 +645,8 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	protected Node<T> findLENode(T x)
 	{
-		Node<T> w = r, z = nil;
-		while (w != nil)
+		Node<T> w = r, z = null;
+		while (w != null)
 		{
 			int comp = c.compare(x, w.x);
 			if (comp < 0)
@@ -682,14 +672,14 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	public Node<T> nextNode(Node<T> w)
 	{
-		if (w.right != nil)
+		if (w.right != null)
 		{
 			w = w.right;
-			while (w.left != nil)
+			while (w.left != null)
 				w = w.left;
 		} else
 		{
-			while (w.parent != nil && w.parent.left != w)
+			while (w.parent != null && w.parent.left != w)
 				w = w.parent;
 			w = w.parent;
 		}
@@ -704,14 +694,14 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	 */
 	public Node<T> prevNode(Node<T> w)
 	{
-		if (w.left != nil)
+		if (w.left != null)
 		{
 			w = w.left;
-			while (w.right != nil)
+			while (w.right != null)
 				w = w.right;
 		} else
 		{
-			while (w.parent != nil && w.parent.right != w)
+			while (w.parent != null && w.parent.right != w)
 				w = w.parent;
 			w = w.parent;
 		}
@@ -734,12 +724,14 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	{
 		inputStream.defaultReadObject();
 		dirty = false;
+		rand = new Random();
+		bytesPerNodeWithData = getObjectBaseSize(r.x) + BYTES_PER_NODE;
 	}
 
 	@Override
 	public long getByteSize()
 	{
-		// 16 base object, 56 treap variables, 24 comparator
+		// 16 base object, 24 treap variables, 24 comparator, 32 rand
 		return (r == null ? 0 : r.size) * bytesPerNodeWithData + (dataBytesEstimate << 1) + 96;
 	}
 

@@ -360,7 +360,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		private T lastResult;
 
 		private T endValue;
-		private Constructor<? extends Comparable<T>> constructorByString;
 
 		public EMSkipIterator()
 		{
@@ -378,11 +377,15 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			String partitionKey = findPath.get(0).listPartitionKey;
 			if (!partitionKey.endsWith("-1"))
 			{
-				int lastDashIndex = partitionKey.lastIndexOf("-");
-				partitionKey = partitionKey.substring(0, lastDashIndex) + "-1";
+				partitionKey = startValue + "-1";
+				subList = listCache.get(partitionKey);
+				if (endValue != null && lastResult.compareTo(endValue) >= 0)
+					iter = subList.structure.iterator(lastResult, endValue);
+			} else
+			{
+				subList = listCache.get(partitionKey);
+				iter = subList.structure.iterator(lastResult, endValue);
 			}
-			subList = listCache.get(partitionKey);
-			iter = subList.structure.iterator(lastResult, endValue);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -394,17 +397,19 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 				int lastDashIndex = subList.nextPartitionId.lastIndexOf("-");
 				String partitionIdStrVal = subList.nextPartitionId.substring(0, lastDashIndex);
 				T partitionIdVal;
+				subList = listCache.get(subList.nextPartitionId);
 				try
 				{
-					if (constructorByString == null)
-						constructorByString = (Constructor<? extends Comparable<T>>) lastResult
-								.getClass().getDeclaredConstructor(String.class);
-					partitionIdVal = (T) constructorByString.newInstance(partitionIdStrVal);
-					if (endValue == null || partitionIdVal.compareTo(endValue) < 0)
+					if (lastDashIndex > 0)
 					{
-						lastResult = partitionIdVal;
-						iter = null;
-					}
+						partitionIdVal = (T) comparableConstructor.newInstance(partitionIdStrVal);
+						if (endValue == null || partitionIdVal.compareTo(endValue) < 0)
+						{
+							lastResult = partitionIdVal;
+							iter = null;
+						}
+					} else
+						iter = subList.structure.iterator(lastResult, endValue);
 				} catch (Exception e)
 				{
 					throw new RuntimeException(e);
@@ -421,7 +426,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			if (iter == null)
 			{
 				result = lastResult;
-				subList = listCache.get(subList.nextPartitionId);
 				iter = subList.structure.iterator(lastResult, endValue);
 			} else
 				result = iter.next();
