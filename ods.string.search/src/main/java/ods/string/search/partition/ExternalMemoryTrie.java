@@ -44,6 +44,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		BinaryPatriciaTrie<T> root = (BinaryPatriciaTrie<T>) baseConfig.trieCache.get("~")
 				.createNewSet();
 		trieCache.register("~", root);
+		maxSetSize = baseConfig.maxSetSize;
 		minPartitionDepth = baseConfig.minPartitionDepth;
 	}
 
@@ -287,5 +288,10 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 	public ExternalMemoryObjectCache<? extends ExternalizableMemoryObject> getObjectCache()
 	{
 		return trieCache;
+	}
+
+	public void setMaxSetSize(int maxSetSize)
+	{
+		this.maxSetSize = maxSetSize;
 	}
 }

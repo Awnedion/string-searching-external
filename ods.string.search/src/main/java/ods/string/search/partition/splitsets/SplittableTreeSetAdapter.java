@@ -33,9 +33,13 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 	public SplittableTreeSetAdapter(Collection<T> elems)
 	{
 		adaptee = new TreeSet<T>(elems);
-		bytesPerNodeWithData = getObjectBaseSize(elems.iterator().next()) + BYTES_PER_NODE;
 		for (Iterator<T> iter = elems.iterator(); iter.hasNext();)
-			dataBytesEstimate += iter.next().toString().length();
+		{
+			T nextElem = iter.next();
+			if (bytesPerNodeWithData == -1)
+				bytesPerNodeWithData = getObjectBaseSize(nextElem) + BYTES_PER_NODE;
+			dataBytesEstimate += nextElem.toString().length();
+		}
 	}
 
 	@Override
@@ -141,9 +145,10 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 	public boolean merge(SplittableSet<T> t)
 	{
 		SplittableTreeSetAdapter<T> set = (SplittableTreeSetAdapter<T>) t;
-		if (adaptee.last().compareTo(set.adaptee.first()) >= 0)
+		if (!adaptee.isEmpty() && !set.adaptee.isEmpty()
+				&& adaptee.last().compareTo(set.adaptee.first()) >= 0)
 			return false;
-		if (set.adaptee.size() > 0)
+		if (!set.adaptee.isEmpty())
 		{
 			dirty = true;
 			set.dirty = true;

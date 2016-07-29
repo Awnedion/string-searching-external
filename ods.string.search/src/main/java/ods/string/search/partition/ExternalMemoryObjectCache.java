@@ -63,6 +63,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	private long compressedBytes = 0;
 	private long serializationTime = 0;
 	private long diskWriteTime = 0;
+	private long diskReadTime = 0;
 	private MessageDigest md5Hash;
 
 	public ExternalMemoryObjectCache(File directory)
@@ -130,12 +131,14 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				File blockFile = new File(storageDirectory, blockFileName);
 				if (blockFile.exists())
 				{
+					long startTime = System.currentTimeMillis();
 					InputStream is = new FileInputStream(blockFile);
 					if (compress)
 						is = new SnappyInputStream(is);
 					ObjectInputStream objStream = new ObjectInputStream(is);
 					block.data = (T) objStream.readObject();
 					objStream.close();
+					diskReadTime += System.currentTimeMillis() - startTime;
 					block.updateSizeEstimate();
 				}
 
@@ -203,6 +206,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		System.out.println("Compression Ratio: " + getCompressionRatio());
 		System.out.println("Total Serialization Time: " + serializationTime + "ms");
 		System.out.println("Total Disk Write Time: " + diskWriteTime + "ms");
+		System.out.println("Total Disk Read Time: " + diskReadTime + "ms");
 	}
 
 	public double getCompressionRatio()

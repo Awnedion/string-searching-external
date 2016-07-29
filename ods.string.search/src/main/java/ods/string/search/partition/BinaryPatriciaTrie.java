@@ -1,7 +1,10 @@
 package ods.string.search.partition;
 
+import java.io.Externalizable;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -29,7 +32,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	 */
 	private static final int BYTES_PER_NODE = 80;
 
-	protected static class Node implements Serializable
+	protected static class Node implements Serializable, Externalizable
 	{
 		private static final long serialVersionUID = 4014282151450729129L;
 
@@ -50,6 +53,11 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		Node leftChild;
 
 		Node rightChild;
+
+		public Node()
+		{
+
+		}
 
 		public Node(byte[] label)
 		{
@@ -83,6 +91,29 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				result += "~" + partialByte + "-" + mod;
 			}
 			return result;
+		}
+
+		@Override
+		public void writeExternal(ObjectOutput out) throws IOException
+		{
+			out.writeInt(subtreeSize);
+			out.writeBoolean(valueEnd);
+			out.writeInt(bitsUsed);
+			out.write(label, 0, (int) Math.ceil(bitsUsed / 8.));
+			out.writeObject(leftChild);
+			out.writeObject(rightChild);
+		}
+
+		@Override
+		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
+		{
+			subtreeSize = in.readInt();
+			valueEnd = in.readBoolean();
+			bitsUsed = in.readInt();
+			label = new byte[(int) Math.ceil(bitsUsed / 8.)];
+			in.read(label);
+			leftChild = (Node) in.readObject();
+			rightChild = (Node) in.readObject();
 		}
 	}
 
@@ -583,7 +614,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		return n;
 	}
 
-	protected abstract class TrieIteratorParent
+	private abstract class TrieIteratorParent
 	{
 		private ArrayList<SearchPoint> uncheckNodes = new ArrayList<SearchPoint>();
 		private Object nextResult;
@@ -670,7 +701,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		}
 	}
 
-	protected class TrieIterator extends TrieIteratorParent implements Iterator<T>
+	private class TrieIterator extends TrieIteratorParent implements Iterator<T>
 	{
 
 		public TrieIterator(byte[] prefix)
@@ -691,7 +722,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		}
 	}
 
-	protected class TrieIteratorSearchPoints extends TrieIteratorParent implements
+	private class TrieIteratorSearchPoints extends TrieIteratorParent implements
 			Iterator<SearchPoint>
 	{
 

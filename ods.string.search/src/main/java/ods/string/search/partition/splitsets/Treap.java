@@ -1,7 +1,10 @@
 package ods.string.search.partition.splitsets;
 
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -37,14 +40,13 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 	/**
 	 * The root of this tree
 	 */
-	protected Node<T> r;
+	protected transient Node<T> r;
 
 	@SuppressWarnings("unchecked")
 	private Comparator<T> c = new DefaultComparator();
 
-	protected static class Node<T> implements Serializable
+	protected static class Node<T>
 	{
-		private static final long serialVersionUID = 2416477592385110366L;
 
 		public Node<T> left;
 		public Node<T> right;
@@ -52,6 +54,18 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		public T x;
 		public int p;
 		public int size;
+
+		public void writeExternal(ObjectOutput out) throws IOException
+		{
+			// Write the elements in sorted order.
+			if (left != null)
+				left.writeExternal(out);
+
+			out.writeObject(x);
+
+			if (right != null)
+				right.writeExternal(out);
+		}
 	}
 
 	public Treap()
@@ -719,13 +733,64 @@ public class Treap<T extends Comparable<T> & Serializable> implements Splittable
 		return r.x + " " + r.size;
 	}
 
+	private void writeObject(ObjectOutputStream s) throws IOException
+	{
+		// Write out the Comparator and any hidden stuff
+		s.defaultWriteObject();
+
+		// Write out size (number of Mappings)
+		s.writeInt(r != null ? r.size : 0);
+
+		if (r != null)
+			r.writeExternal(s);
+	}
+
 	private void readObject(ObjectInputStream inputStream) throws IOException,
 			ClassNotFoundException
 	{
 		inputStream.defaultReadObject();
 		dirty = false;
 		rand = new Random();
-		bytesPerNodeWithData = getObjectBaseSize(r.x) + BYTES_PER_NODE;
+
+		int size = inputStream.readInt();
+		int height = (int) (Math.log10(size) / Math.log10(2));
+		if (size > 0)
+			r = constuctNode(inputStream, height, 0, size);
+
+		if (r != null)
+			bytesPerNodeWithData = getObjectBaseSize(r.x) + BYTES_PER_NODE;
+		else
+			bytesPerNodeWithData = -1;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Node<T> constuctNode(ObjectInput in, int height, int curDepth, int sizeLeft)
+			throws IOException, ClassNotFoundException
+	{
+		Node<T> newNode = new Node<T>();
+		newNode.size = 1;
+		if (curDepth < height && sizeLeft > newNode.size)
+		{
+			Node<T> leftChild = constuctNode(in, height, curDepth + 1, sizeLeft - newNode.size);
+			newNode.left = leftChild;
+			leftChild.parent = newNode;
+			newNode.size += leftChild.size;
+		}
+
+		T elem = (T) in.readObject();
+		newNode.x = elem;
+		newNode.p = (int) (Integer.MIN_VALUE + ((long) Integer.MAX_VALUE - Integer.MIN_VALUE)
+				* (curDepth + 1) / (height + 2));
+
+		if (curDepth < height && sizeLeft > newNode.size)
+		{
+			Node<T> rightChild = constuctNode(in, height, curDepth + 1, sizeLeft - newNode.size);
+			newNode.right = rightChild;
+			rightChild.parent = newNode;
+			newNode.size += rightChild.size;
+		}
+
+		return newNode;
 	}
 
 	@Override

@@ -417,9 +417,9 @@ public class PerformanceReportITCase
 	private class PartitionImplementation
 	{
 		public String name;
-		public SplittableSet<String> impl;
+		public PrefixSearchableSet<String> impl;
 
-		public PartitionImplementation(String name, SplittableSet<String> impl)
+		public PartitionImplementation(String name, PrefixSearchableSet<String> impl)
 		{
 			this.name = name;
 			this.impl = impl;
@@ -444,40 +444,40 @@ public class PerformanceReportITCase
 		for (PartitionImplementation pi : partitionImpls)
 		{
 			cases.add(new ReportCase("BTree-Seq-" + pi.name + "-5000",
-					new ExternalMemorySplittableSet<String>(tmpDir, 5000, 50000000l, pi.impl),
-					InputType.SEQUENTIAL));
+					new ExternalMemorySplittableSet<String>(tmpDir, 5000, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.SEQUENTIAL));
 			cases.add(new ReportCase("BTree-Seq-" + pi.name + "-15000",
-					new ExternalMemorySplittableSet<String>(tmpDir, 15000, 50000000l, pi.impl),
-					InputType.SEQUENTIAL));
+					new ExternalMemorySplittableSet<String>(tmpDir, 15000, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.SEQUENTIAL));
 			cases.add(new ReportCase("BTree-Seq-" + pi.name + "-25000",
-					new ExternalMemorySplittableSet<String>(tmpDir, 25000, 50000000l, pi.impl),
-					InputType.SEQUENTIAL));
+					new ExternalMemorySplittableSet<String>(tmpDir, 25000, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.SEQUENTIAL));
 		}
 
 		for (PartitionImplementation pi : partitionImpls)
 		{
 			cases.add(new ReportCase("BTree-Word-" + pi.name + "-50",
-					new ExternalMemorySplittableSet<String>(tmpDir, 50, 50000000l, pi.impl),
-					InputType.WORDS));
+					new ExternalMemorySplittableSet<String>(tmpDir, 50, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.WORDS));
 			cases.add(new ReportCase("BTree-Word-" + pi.name + "-100",
-					new ExternalMemorySplittableSet<String>(tmpDir, 100, 50000000l, pi.impl),
-					InputType.WORDS));
+					new ExternalMemorySplittableSet<String>(tmpDir, 100, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.WORDS));
 			cases.add(new ReportCase("BTree-Word-" + pi.name + "-200",
-					new ExternalMemorySplittableSet<String>(tmpDir, 200, 50000000l, pi.impl),
-					InputType.WORDS));
+					new ExternalMemorySplittableSet<String>(tmpDir, 200, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.WORDS));
 		}
 
 		for (PartitionImplementation pi : partitionImpls)
 		{
 			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-40",
-					new ExternalMemorySplittableSet<String>(tmpDir, 40, 50000000l, pi.impl),
-					InputType.RANDOM));
+					new ExternalMemorySplittableSet<String>(tmpDir, 40, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.RANDOM));
 			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-70",
-					new ExternalMemorySplittableSet<String>(tmpDir, 70, 50000000l, pi.impl),
-					InputType.RANDOM));
+					new ExternalMemorySplittableSet<String>(tmpDir, 70, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.RANDOM));
 			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-150",
-					new ExternalMemorySplittableSet<String>(tmpDir, 150, 50000000l, pi.impl),
-					InputType.RANDOM));
+					new ExternalMemorySplittableSet<String>(tmpDir, 150, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.RANDOM));
 		}
 
 		printReport("bPlusTreePerformance", cases);
@@ -501,40 +501,40 @@ public class PerformanceReportITCase
 		for (PartitionImplementation pi : partitionImpls)
 		{
 			cases.add(new ReportCase("SkipList-Seq-" + pi.name + "-3000",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 3000., 50000000l, pi.impl),
-					InputType.SEQUENTIAL));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 3000., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.SEQUENTIAL));
 			cases.add(new ReportCase("SkipList-Seq-" + pi.name + "-6000",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 6000., 50000000l, pi.impl),
-					InputType.SEQUENTIAL));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 6000., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.SEQUENTIAL));
 			cases.add(new ReportCase("SkipList-Seq-" + pi.name + "-12000",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 12000., 50000000l, pi.impl),
-					InputType.SEQUENTIAL));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 12000., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.SEQUENTIAL));
 		}
 
 		for (PartitionImplementation pi : partitionImpls)
 		{
 			cases.add(new ReportCase("SkipList-Word-" + pi.name + "-50",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
-					InputType.WORDS));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.WORDS));
 			cases.add(new ReportCase("SkipList-Word-" + pi.name + "-100",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
-					InputType.WORDS));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.WORDS));
 			cases.add(new ReportCase("SkipList-Word-" + pi.name + "-200",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 200., 50000000l, pi.impl),
-					InputType.WORDS));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 200., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.WORDS));
 		}
 
 		for (PartitionImplementation pi : partitionImpls)
 		{
 			cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-25",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 25., 50000000l, pi.impl),
-					InputType.RANDOM));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 25., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.RANDOM));
 			cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-50",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
-					InputType.RANDOM));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.RANDOM));
 			cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-100",
-					new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
-					InputType.RANDOM));
+					new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.RANDOM));
 		}
 
 		printReport("skipListPerformance", cases);
@@ -547,51 +547,53 @@ public class PerformanceReportITCase
 		File tmpDir = new File("target/tmp");
 
 		ArrayList<PartitionImplementation> partitionImpls = new ArrayList<PartitionImplementation>();
-		partitionImpls.add(new PartitionImplementation("ArrayList",
-				new ExternalizableListSet<String>(new ExternalizableArrayList<String>(), false)));
+		// partitionImpls.add(new PartitionImplementation("EvenSplits",
+		// new ExternalMemoryTrie<String>(tmpDir, 50, 50000000l, 0)));
+		partitionImpls.add(new PartitionImplementation("4MinDepth", new ExternalMemoryTrie<String>(
+				tmpDir, 50, 50000000l, 4)));
 		// partitionImpls.add(new PartitionImplementation("Treap", new Treap<String>()));
 		// partitionImpls.add(new PartitionImplementation("RBT",
 		// new SplittableTreeSetAdapter<String>()));
 		// partitionImpls.add(new PartitionImplementation("LinkedLinear",
 		// new ExternalizableListSet<String>(new ExternalizableLinkedList<String>(), true)));
 
+		// for (PartitionImplementation pi : partitionImpls)
+		// {
+		// cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-3000",
+		// new ExternalMemoryTrie<String>(tmpDir, 3000, 50000000l, 0),
+		// InputType.SEQUENTIAL));
+		// cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-6000",
+		// new ExternalMemoryTrie<String>(tmpDir, 6000, 50000000l, 0),
+		// InputType.SEQUENTIAL));
+		// cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-12000",
+		// new ExternalMemoryTrie<String>(tmpDir, 12000, 50000000l, 0),
+		// InputType.SEQUENTIAL));
+		// }
+
 		for (PartitionImplementation pi : partitionImpls)
 		{
-			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-3000",
-					new ExternalMemoryTrie<String>(tmpDir, 3000, 50000000l, 0),
-					InputType.SEQUENTIAL));
-			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-6000",
-					new ExternalMemoryTrie<String>(tmpDir, 6000, 50000000l, 0),
-					InputType.SEQUENTIAL));
-			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-12000",
-					new ExternalMemoryTrie<String>(tmpDir, 12000, 50000000l, 0),
-					InputType.SEQUENTIAL));
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(50);
+			cases.add(new ReportCase("PatTrie-Word-" + pi.name + "-50",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.WORDS));
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(100);
+			cases.add(new ReportCase("PatTrie-Word-" + pi.name + "-100",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.WORDS));
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(200);
+			cases.add(new ReportCase("PatTrie-Word-" + pi.name + "-200",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.WORDS));
 		}
 
 		// for (PartitionImplementation pi : partitionImpls)
 		// {
-		// cases.add(new ReportCase("SkipList-Word-" + pi.name + "-50",
-		// new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
-		// InputType.WORDS));
-		// cases.add(new ReportCase("SkipList-Word-" + pi.name + "-100",
-		// new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
-		// InputType.WORDS));
-		// cases.add(new ReportCase("SkipList-Word-" + pi.name + "-200",
-		// new ExternalMemorySkipList<String>(tmpDir, 1. / 200., 50000000l, pi.impl),
-		// InputType.WORDS));
-		// }
-		//
-		// for (PartitionImplementation pi : partitionImpls)
-		// {
-		// cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-25",
-		// new ExternalMemorySkipList<String>(tmpDir, 1. / 25., 50000000l, pi.impl),
-		// InputType.RANDOM));
-		// cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-50",
-		// new ExternalMemorySkipList<String>(tmpDir, 1. / 50., 50000000l, pi.impl),
-		// InputType.RANDOM));
-		// cases.add(new ReportCase("SkipList-Rand-" + pi.name + "-100",
-		// new ExternalMemorySkipList<String>(tmpDir, 1. / 100., 50000000l, pi.impl),
-		// InputType.RANDOM));
+		// cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-40",
+		// new ExternalMemoryTrie<String>(tmpDir, 40, 50000000l, 0), InputType.RANDOM));
+		// cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-80",
+		// new ExternalMemoryTrie<String>(tmpDir, 80, 50000000l, 0), InputType.RANDOM));
+		// cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-160",
+		// new ExternalMemoryTrie<String>(tmpDir, 160, 50000000l, 0), InputType.RANDOM));
 		// }
 
 		printReport("binaryPatPerformance", cases);
