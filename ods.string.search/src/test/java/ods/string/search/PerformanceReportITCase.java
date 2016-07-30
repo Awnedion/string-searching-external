@@ -17,6 +17,7 @@ import java.util.zip.GZIPInputStream;
 
 import ods.string.search.partition.EMPrefixSearchableSet;
 import ods.string.search.partition.ExternalMemoryObjectCache;
+import ods.string.search.partition.ExternalMemoryObjectCache.CompressType;
 import ods.string.search.partition.ExternalMemorySkipList;
 import ods.string.search.partition.ExternalMemorySplittableSet;
 import ods.string.search.partition.ExternalMemoryTrie;
@@ -30,6 +31,7 @@ import ods.string.search.partition.splitsets.Treap;
 
 import org.junit.Test;
 
+@SuppressWarnings("unchecked")
 public class PerformanceReportITCase
 {
 	private enum InputType
@@ -417,9 +419,9 @@ public class PerformanceReportITCase
 	private class PartitionImplementation
 	{
 		public String name;
-		public PrefixSearchableSet<String> impl;
+		public Object impl;
 
-		public PartitionImplementation(String name, PrefixSearchableSet<String> impl)
+		public PartitionImplementation(String name, Object impl)
 		{
 			this.name = name;
 			this.impl = impl;
@@ -547,28 +549,26 @@ public class PerformanceReportITCase
 		File tmpDir = new File("target/tmp");
 
 		ArrayList<PartitionImplementation> partitionImpls = new ArrayList<PartitionImplementation>();
-		// partitionImpls.add(new PartitionImplementation("EvenSplits",
-		// new ExternalMemoryTrie<String>(tmpDir, 50, 50000000l, 0)));
+		partitionImpls.add(new PartitionImplementation("EvenSplits",
+				new ExternalMemoryTrie<String>(tmpDir, 50, 50000000l, 0)));
 		partitionImpls.add(new PartitionImplementation("4MinDepth", new ExternalMemoryTrie<String>(
 				tmpDir, 50, 50000000l, 4)));
-		// partitionImpls.add(new PartitionImplementation("Treap", new Treap<String>()));
-		// partitionImpls.add(new PartitionImplementation("RBT",
-		// new SplittableTreeSetAdapter<String>()));
-		// partitionImpls.add(new PartitionImplementation("LinkedLinear",
-		// new ExternalizableListSet<String>(new ExternalizableLinkedList<String>(), true)));
 
-		// for (PartitionImplementation pi : partitionImpls)
-		// {
-		// cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-3000",
-		// new ExternalMemoryTrie<String>(tmpDir, 3000, 50000000l, 0),
-		// InputType.SEQUENTIAL));
-		// cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-6000",
-		// new ExternalMemoryTrie<String>(tmpDir, 6000, 50000000l, 0),
-		// InputType.SEQUENTIAL));
-		// cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-12000",
-		// new ExternalMemoryTrie<String>(tmpDir, 12000, 50000000l, 0),
-		// InputType.SEQUENTIAL));
-		// }
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(3000);
+			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-3000",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.SEQUENTIAL));
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(6000);
+			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-6000",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.SEQUENTIAL));
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(12000);
+			cases.add(new ReportCase("PatTrie-Seq-" + pi.name + "-12000",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.SEQUENTIAL));
+		}
 
 		for (PartitionImplementation pi : partitionImpls)
 		{
@@ -586,15 +586,21 @@ public class PerformanceReportITCase
 					InputType.WORDS));
 		}
 
-		// for (PartitionImplementation pi : partitionImpls)
-		// {
-		// cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-40",
-		// new ExternalMemoryTrie<String>(tmpDir, 40, 50000000l, 0), InputType.RANDOM));
-		// cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-80",
-		// new ExternalMemoryTrie<String>(tmpDir, 80, 50000000l, 0), InputType.RANDOM));
-		// cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-160",
-		// new ExternalMemoryTrie<String>(tmpDir, 160, 50000000l, 0), InputType.RANDOM));
-		// }
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(40);
+			cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-40",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.RANDOM));
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(80);
+			cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-80",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.RANDOM));
+			((ExternalMemoryTrie<String>) pi.impl).setMaxSetSize(160);
+			cases.add(new ReportCase("PatTrie-Rand-" + pi.name + "-160",
+					new ExternalMemoryTrie<String>(tmpDir, (ExternalMemoryTrie<String>) pi.impl),
+					InputType.RANDOM));
+		}
 
 		printReport("binaryPatPerformance", cases);
 	}
@@ -608,6 +614,39 @@ public class PerformanceReportITCase
 		cases.add(new ReportCase("NullSet-Rand", new NullSet<String>(), InputType.RANDOM));
 
 		printReport("nullSetPerformance", cases);
+	}
+
+	@Test
+	public void testCompression() throws Exception
+	{
+		ArrayList<PartitionImplementation> partitionImpls = new ArrayList<PartitionImplementation>();
+		partitionImpls.add(new PartitionImplementation("CompressSnappy",
+				new ExternalMemoryObjectCache<>(new File("target/tmp"), 50000000l,
+						CompressType.SNAPPY)));
+		partitionImpls.add(new PartitionImplementation("CompressGzip",
+				new ExternalMemoryObjectCache<>(new File("target/tmp"), 50000000l,
+						CompressType.GZIP)));
+		partitionImpls.add(new PartitionImplementation("CompressNone",
+				new ExternalMemoryObjectCache<>(new File("target/tmp"), 50000000l,
+						CompressType.NONE)));
+
+		ArrayList<ReportCase> cases = new ArrayList<ReportCase>();
+
+		for (PartitionImplementation pi : partitionImpls)
+		{
+			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-ArrayList-70",
+					new ExternalMemorySplittableSet<String>((ExternalMemoryObjectCache<?>) pi.impl,
+							70, new ExternalizableListSet<String>(
+									new ExternalizableArrayList<String>(), false)),
+					InputType.RANDOM));
+			cases.add(new ReportCase("BTree-Rand-" + pi.name + "-150",
+					new ExternalMemorySplittableSet<String>((ExternalMemoryObjectCache<?>) pi.impl,
+							150, new ExternalizableListSet<String>(
+									new ExternalizableArrayList<String>(), false)),
+					InputType.RANDOM));
+		}
+
+		printReport("bTreeCompressionPerformance", cases);
 	}
 
 	@Test

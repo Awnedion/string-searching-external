@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 
 import ods.string.search.Utils;
-import ods.string.search.partition.ExternalMemoryObjectCache;
+import ods.string.search.partition.ExternalMemoryObjectCache.CompressType;
 import ods.string.search.partition.splitsets.CoolString;
 
 import org.junit.Assert;
@@ -25,7 +25,7 @@ public class ExternalMemoryObjectCacheTest
 	public void testStorage()
 	{
 		ExternalMemoryObjectCache<CoolString> cache = new ExternalMemoryObjectCache<CoolString>(
-				new File("target/blocks"), 10, true);
+				new File("target/blocks"), 10, CompressType.SNAPPY);
 		for (int x = 0; x < 100; x++)
 			cache.register(x + "", new CoolString(x + ""));
 

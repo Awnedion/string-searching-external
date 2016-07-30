@@ -1,5 +1,7 @@
 package ods.string.search.partition;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +17,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 
@@ -53,9 +57,14 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		}
 	}
 
+	public enum CompressType
+	{
+		NONE, GZIP, SNAPPY
+	}
+
 	private long inMemoryByteEstimate = 0;
 	private long maxCacheMemorySize;
-	private boolean compress;
+	private CompressType compress;
 	private File storageDirectory;
 	private LinkedHashMap<String, Block> cachedBlocks = new LinkedHashMap<String, Block>(16, 0.75f,
 			true);
@@ -68,10 +77,10 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 
 	public ExternalMemoryObjectCache(File directory)
 	{
-		init(directory, 1000000000, true);
+		init(directory, 1000000000, CompressType.SNAPPY);
 	}
 
-	public ExternalMemoryObjectCache(File directory, long cacheSize, boolean compress)
+	public ExternalMemoryObjectCache(File directory, long cacheSize, CompressType compress)
 	{
 		init(directory, cacheSize, compress);
 	}
@@ -81,7 +90,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		init(directory, baseCacheConfig.maxCacheMemorySize, baseCacheConfig.compress);
 	}
 
-	private void init(File directory, long cacheSize, boolean compress)
+	private void init(File directory, long cacheSize, CompressType compress)
 	{
 		storageDirectory = directory;
 		storageDirectory.mkdirs();
@@ -132,9 +141,11 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				if (blockFile.exists())
 				{
 					long startTime = System.currentTimeMillis();
-					InputStream is = new FileInputStream(blockFile);
-					if (compress)
+					InputStream is = new BufferedInputStream(new FileInputStream(blockFile));
+					if (compress == CompressType.SNAPPY)
 						is = new SnappyInputStream(is);
+					else if (compress == CompressType.GZIP)
+						is = new GZIPInputStream(is);
 					ObjectInputStream objStream = new ObjectInputStream(is);
 					block.data = (T) objStream.readObject();
 					objStream.close();
@@ -168,16 +179,18 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				long startTime = System.currentTimeMillis();
 				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 				OutputStream os = bytes;
-				if (compress)
+				if (compress == CompressType.SNAPPY)
 					os = new SnappyOutputStream(os);
+				else if (compress == CompressType.GZIP)
+					os = new GZIPOutputStream(os);
 				ObjectOutputStream out = new ObjectOutputStream(os);
 				out.writeObject(flushBlock.data);
 				out.close();
 				serializationTime += System.currentTimeMillis() - startTime;
 				startTime = System.currentTimeMillis();
 				String blockFileName = convertBlockIdToFilename(block);
-				OutputStream fileOutput = new FileOutputStream(new File(storageDirectory,
-						blockFileName));
+				OutputStream fileOutput = new BufferedOutputStream(new FileOutputStream(new File(
+						storageDirectory, blockFileName)));
 				fileOutput.write(bytes.toByteArray());
 				fileOutput.close();
 				diskWriteTime += System.currentTimeMillis() - startTime;

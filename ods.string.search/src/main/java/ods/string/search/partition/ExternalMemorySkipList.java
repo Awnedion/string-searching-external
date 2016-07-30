@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 import ods.string.search.PrefixSearchableSet;
+import ods.string.search.partition.ExternalMemoryObjectCache.CompressType;
 import ods.string.search.partition.splitsets.ExternalizableLinkedList;
 import ods.string.search.partition.splitsets.ExternalizableListSet;
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
@@ -123,7 +124,8 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	private void init(File storageDirectory, long cacheSize)
 	{
 		if (listCache == null)
-			listCache = new ExternalMemoryObjectCache<SubList<T>>(storageDirectory, cacheSize, true);
+			listCache = new ExternalMemoryObjectCache<SubList<T>>(storageDirectory, cacheSize,
+					CompressType.SNAPPY);
 		maxHeight = 1;
 		SubList<T> root = new SubList<T>(partitionImplementation);
 		listCache.register("-1", root);

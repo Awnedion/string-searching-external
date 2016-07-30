@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Stack;
 
 import ods.string.search.partition.BinaryPatriciaTrie.SearchPoint;
+import ods.string.search.partition.ExternalMemoryObjectCache.CompressType;
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 
 import org.apache.commons.codec.binary.Hex;
@@ -21,7 +22,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 	public ExternalMemoryTrie(File storageDirectory)
 	{
 		trieCache = new ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>(storageDirectory,
-				100000000, true);
+				100000000, CompressType.SNAPPY);
 		BinaryPatriciaTrie<T> root = new BinaryPatriciaTrie<T>();
 		trieCache.register("~", root);
 		minPartitionDepth = 0;
@@ -32,7 +33,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 	{
 		this.maxSetSize = maxSetSize;
 		trieCache = new ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>(storageDirectory,
-				maxInMemoryBytes, true);
+				maxInMemoryBytes, CompressType.SNAPPY);
 		trieCache.register("~", new BinaryPatriciaTrie<T>());
 		this.minPartitionDepth = minPartitionDepth;
 	}

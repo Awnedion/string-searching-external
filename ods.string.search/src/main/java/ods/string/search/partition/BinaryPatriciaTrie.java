@@ -1,10 +1,10 @@
 package ods.string.search.partition;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -32,10 +32,8 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	 */
 	private static final int BYTES_PER_NODE = 80;
 
-	protected static class Node implements Serializable, Externalizable
+	protected static class Node
 	{
-		private static final long serialVersionUID = 4014282151450729129L;
-
 		/**
 		 * The string represented by the 'edge' that points to this node.
 		 */
@@ -93,27 +91,63 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			return result;
 		}
 
-		@Override
 		public void writeExternal(ObjectOutput out) throws IOException
 		{
-			out.writeInt(subtreeSize);
-			out.writeBoolean(valueEnd);
 			out.writeInt(bitsUsed);
 			out.write(label, 0, (int) Math.ceil(bitsUsed / 8.));
-			out.writeObject(leftChild);
-			out.writeObject(rightChild);
+
+			byte flags = 0;
+			if (subtreeSize == 0)
+				flags |= 0x80;
+			if (leftChild != null)
+				flags |= 0x40;
+			if (rightChild != null)
+				flags |= 0x20;
+			if (valueEnd)
+				flags |= 0x10;
+			out.writeByte(flags);
+
+			if (leftChild != null)
+				leftChild.writeExternal(out);
+			if (rightChild != null)
+				rightChild.writeExternal(out);
 		}
 
-		@Override
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
 		{
-			subtreeSize = in.readInt();
-			valueEnd = in.readBoolean();
 			bitsUsed = in.readInt();
 			label = new byte[(int) Math.ceil(bitsUsed / 8.)];
-			in.read(label);
-			leftChild = (Node) in.readObject();
-			rightChild = (Node) in.readObject();
+			int bytesRead = 0;
+			while (bytesRead < label.length)
+			{
+				bytesRead += in.read(label, bytesRead, label.length - bytesRead);
+			}
+
+			byte flags = in.readByte();
+			if ((flags & 0x80) != 0)
+			{
+				subtreeSize = 0;
+				return;
+			}
+
+			subtreeSize = 1;
+			if ((flags & 0x10) != 0)
+				valueEnd = true;
+
+			if ((flags & 0x40) != 0)
+			{
+				Node left = new Node();
+				leftChild = left;
+				left.readExternal(in);
+				subtreeSize += left.subtreeSize;
+			}
+			if ((flags & 0x20) != 0)
+			{
+				Node right = new Node();
+				rightChild = right;
+				right.readExternal(in);
+				subtreeSize += right.subtreeSize;
+			}
 		}
 	}
 
@@ -275,14 +309,14 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	/**
 	 * The root
 	 */
-	protected Node r;
+	protected transient Node r;
 
 	protected ByteArrayConversion converter;
 
 	private transient boolean dirty = true;
 	private long dataBytesEstimate = 0;
 
-	protected Node childTrieLabel;
+	protected transient Node childTrieLabel;
 
 	public BinaryPatriciaTrie()
 	{
@@ -793,7 +827,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 			int leftSize = (curNode.leftChild != null) ? curNode.leftChild.subtreeSize : 0;
 			int rightSize = (curNode.rightChild != null) ? curNode.rightChild.subtreeSize : 0;
-			if (leftSize >= rightSize && curDepth >= minPartitionDepth
+			if (leftSize >= rightSize && (curDepth >= minPartitionDepth || leftSize == 1)
 					&& leftSize <= upperBoundSize && leftSize > 0)
 			{
 				appendOnNode(matchedLabel, curNode.leftChild);
@@ -803,7 +837,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				result.r = curNode.leftChild;
 				curNode.leftChild = pointerNode;
 				break;
-			} else if (rightSize > leftSize && curDepth >= minPartitionDepth
+			} else if (rightSize > leftSize && (curDepth >= minPartitionDepth || rightSize == 1)
 					&& rightSize <= upperBoundSize)
 			{
 				appendOnNode(matchedLabel, curNode.rightChild);
@@ -889,11 +923,40 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		return result;
 	}
 
+	private void writeObject(ObjectOutputStream s) throws IOException
+	{
+		s.defaultWriteObject();
+
+		byte flags = 0;
+		if (r != null)
+			flags |= 0x80;
+		if (childTrieLabel != null)
+			flags |= 0x40;
+		s.writeByte(flags);
+
+		if (r != null)
+			r.writeExternal(s);
+		if (childTrieLabel != null)
+			childTrieLabel.writeExternal(s);
+	}
+
 	private void readObject(ObjectInputStream inputStream) throws IOException,
 			ClassNotFoundException
 	{
 		inputStream.defaultReadObject();
 		dirty = false;
+
+		byte flags = inputStream.readByte();
+		if ((flags & 0x80) != 0)
+		{
+			r = new Node();
+			r.readExternal(inputStream);
+		}
+		if ((flags & 0x40) != 0)
+		{
+			childTrieLabel = new Node();
+			childTrieLabel.readExternal(inputStream);
+		}
 	}
 
 	@Override

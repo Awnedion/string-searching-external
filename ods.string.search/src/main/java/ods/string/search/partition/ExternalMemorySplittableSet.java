@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Iterator;
 
+import ods.string.search.partition.ExternalMemoryObjectCache.CompressType;
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 import ods.string.search.partition.splitsets.SplittableSet;
 import ods.string.search.partition.splitsets.Treap;
@@ -71,7 +72,8 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 
 	public ExternalMemorySplittableSet(File storageDirectory)
 	{
-		setCache = new ExternalMemoryObjectCache<TreeNode<T>>(storageDirectory, 100000000, true);
+		setCache = new ExternalMemoryObjectCache<TreeNode<T>>(storageDirectory, 100000000,
+				CompressType.SNAPPY);
 		TreeNode<T> root = new TreeNode<T>(new Treap<T>(), treeHeight);
 		setCache.register("-1", root);
 	}
@@ -81,7 +83,17 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 	{
 		this.maxSetSize = maxSetSize;
 		setCache = new ExternalMemoryObjectCache<TreeNode<T>>(storageDirectory, maxInMemoryBytes,
-				true);
+				CompressType.SNAPPY);
+		TreeNode<T> rootNode = new TreeNode<T>(root, treeHeight);
+		setCache.register("-1", rootNode);
+	}
+
+	@SuppressWarnings("unchecked")
+	public ExternalMemorySplittableSet(ExternalMemoryObjectCache<?> objectCache, int maxSetSize,
+			SplittableSet<T> root)
+	{
+		this.maxSetSize = maxSetSize;
+		setCache = (ExternalMemoryObjectCache<TreeNode<T>>) objectCache;
 		TreeNode<T> rootNode = new TreeNode<T>(root, treeHeight);
 		setCache.register("-1", rootNode);
 	}
