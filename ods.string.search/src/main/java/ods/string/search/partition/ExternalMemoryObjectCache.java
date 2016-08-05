@@ -174,6 +174,7 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		Block flushBlock = cachedBlocks.remove(block);
 		if (flushBlock.data.isDirty())
 		{
+			flushBlock.updateSizeEstimate();
 			try
 			{
 				long startTime = System.currentTimeMillis();

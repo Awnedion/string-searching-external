@@ -38,6 +38,16 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		this.minPartitionDepth = minPartitionDepth;
 	}
 
+	@SuppressWarnings("unchecked")
+	public ExternalMemoryTrie(ExternalMemoryObjectCache<?> cache, int maxSetSize,
+			int minPartitionDepth)
+	{
+		this.maxSetSize = maxSetSize;
+		trieCache = (ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>) cache;
+		trieCache.register("~", new BinaryPatriciaTrie<T>());
+		this.minPartitionDepth = minPartitionDepth;
+	}
+
 	public ExternalMemoryTrie(File storageDirectory, ExternalMemoryTrie<T> baseConfig)
 	{
 		trieCache = new ExternalMemoryObjectCache<BinaryPatriciaTrie<T>>(storageDirectory,

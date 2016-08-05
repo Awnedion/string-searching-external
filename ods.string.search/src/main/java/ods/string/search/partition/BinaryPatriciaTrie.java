@@ -93,9 +93,6 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 		public void writeExternal(ObjectOutput out) throws IOException
 		{
-			out.writeInt(bitsUsed);
-			out.write(label, 0, (int) Math.ceil(bitsUsed / 8.));
-
 			byte flags = 0;
 			if (subtreeSize == 0)
 				flags |= 0x80;
@@ -105,7 +102,20 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				flags |= 0x20;
 			if (valueEnd)
 				flags |= 0x10;
+			if (bitsUsed <= Byte.MAX_VALUE)
+				flags |= 0x08;
+			else if (bitsUsed <= Short.MAX_VALUE)
+				flags |= 0x04;
 			out.writeByte(flags);
+
+			// Prefer to write out bitsUsed as a byte, then short, then int.
+			if (bitsUsed <= Byte.MAX_VALUE)
+				out.writeByte(bitsUsed);
+			else if (bitsUsed <= Short.MAX_VALUE)
+				out.writeShort(bitsUsed);
+			else
+				out.writeInt(bitsUsed);
+			out.write(label, 0, (int) Math.ceil(bitsUsed / 8.));
 
 			if (leftChild != null)
 				leftChild.writeExternal(out);
@@ -115,7 +125,14 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
 		{
-			bitsUsed = in.readInt();
+			byte flags = in.readByte();
+
+			if ((flags & 0x08) != 0)
+				bitsUsed = in.readByte();
+			else if ((flags & 0x04) != 0)
+				bitsUsed = in.readShort();
+			else
+				bitsUsed = in.readInt();
 			label = new byte[(int) Math.ceil(bitsUsed / 8.)];
 			int bytesRead = 0;
 			while (bytesRead < label.length)
@@ -123,7 +140,6 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				bytesRead += in.read(label, bytesRead, label.length - bytesRead);
 			}
 
-			byte flags = in.readByte();
 			if ((flags & 0x80) != 0)
 			{
 				subtreeSize = 0;
