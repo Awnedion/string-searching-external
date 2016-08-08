@@ -20,26 +20,46 @@ import ods.string.search.partition.splitsets.SplittableSet;
  * all edges on the path from the root to v.
  * 
  * In this implementation, the edge labels have been merged into the nodes themselves to remove the
- * need of an Edge type. Also, rather than using an array to store the edges, a HashMap is instead
- * used to reduce the memory footprint.
+ * need of an Edge type.
  */
 public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implements SplittableSet<T>
 {
 	private static final long serialVersionUID = -766158369075318012L;
 
 	/**
-	 * 16 base + 32 non-labels + 32 label array
+	 * 16 base + 40 non-labels + 24 label array + 32 BitString
 	 */
-	private static final int BYTES_PER_NODE = 80;
+	private static final int BYTES_PER_NODE = 112;
+
+	static class BitString
+	{
+		public int bitsUsed;
+		public byte[] label;
+
+		public BitString()
+		{
+
+		}
+
+		public BitString(byte[] label)
+		{
+			this.label = label;
+			bitsUsed = label.length * 8;
+		}
+
+		public BitString(byte[] label, int bitsUsed)
+		{
+			this.label = label;
+			this.bitsUsed = bitsUsed;
+		}
+	}
 
 	protected static class Node
 	{
 		/**
 		 * The string represented by the 'edge' that points to this node.
 		 */
-		byte[] label;
-
-		int bitsUsed;
+		BitString bits;
 
 		int subtreeSize;
 
@@ -52,6 +72,8 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 		Node rightChild;
 
+		Node parent;
+
 		public Node()
 		{
 
@@ -62,6 +84,13 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			init(label, label.length * 8);
 		}
 
+		public Node(BitString label)
+		{
+			bits = label;
+			valueEnd = false;
+			subtreeSize = 1;
+		}
+
 		public Node(byte[] label, int matchingBits)
 		{
 			init(label, matchingBits);
@@ -69,21 +98,20 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 		private void init(byte[] label, int matchingBits)
 		{
-			this.label = label;
-			bitsUsed = matchingBits;
+			bits = new BitString(label, matchingBits);
 			valueEnd = false;
 			subtreeSize = 1;
 		}
 
 		public String toString()
 		{
-			int length = bitsUsed / 8;
-			int mod = bitsUsed % 8;
-			String result = new String(label, 0, length);
+			int length = bits.bitsUsed / 8;
+			int mod = bits.bitsUsed % 8;
+			String result = new String(bits.label, 0, length);
 			if (mod != 0)
 			{
 				short mask = (short) ((255 << (8 - mod)) % 256);
-				String partialByte = Integer.toHexString(label[length] & mask);
+				String partialByte = Integer.toHexString(bits.label[length] & mask);
 				if (partialByte.length() == 1)
 					partialByte += "0";
 				result += "~" + partialByte + "-" + mod;
@@ -102,20 +130,20 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				flags |= 0x20;
 			if (valueEnd)
 				flags |= 0x10;
-			if (bitsUsed <= Byte.MAX_VALUE)
+			if (bits.bitsUsed <= Byte.MAX_VALUE)
 				flags |= 0x08;
-			else if (bitsUsed <= Short.MAX_VALUE)
+			else if (bits.bitsUsed <= Short.MAX_VALUE)
 				flags |= 0x04;
 			out.writeByte(flags);
 
 			// Prefer to write out bitsUsed as a byte, then short, then int.
-			if (bitsUsed <= Byte.MAX_VALUE)
-				out.writeByte(bitsUsed);
-			else if (bitsUsed <= Short.MAX_VALUE)
-				out.writeShort(bitsUsed);
+			if (bits.bitsUsed <= Byte.MAX_VALUE)
+				out.writeByte(bits.bitsUsed);
+			else if (bits.bitsUsed <= Short.MAX_VALUE)
+				out.writeShort(bits.bitsUsed);
 			else
-				out.writeInt(bitsUsed);
-			out.write(label, 0, (int) Math.ceil(bitsUsed / 8.));
+				out.writeInt(bits.bitsUsed);
+			out.write(bits.label, 0, (int) Math.ceil(bits.bitsUsed / 8.));
 
 			if (leftChild != null)
 				leftChild.writeExternal(out);
@@ -127,17 +155,18 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		{
 			byte flags = in.readByte();
 
+			bits = new BitString();
 			if ((flags & 0x08) != 0)
-				bitsUsed = in.readByte();
+				bits.bitsUsed = in.readByte();
 			else if ((flags & 0x04) != 0)
-				bitsUsed = in.readShort();
+				bits.bitsUsed = in.readShort();
 			else
-				bitsUsed = in.readInt();
-			label = new byte[(int) Math.ceil(bitsUsed / 8.)];
+				bits.bitsUsed = in.readInt();
+			bits.label = new byte[(int) Math.ceil(bits.bitsUsed / 8.)];
 			int bytesRead = 0;
-			while (bytesRead < label.length)
+			while (bytesRead < bits.label.length)
 			{
-				bytesRead += in.read(label, bytesRead, label.length - bytesRead);
+				bytesRead += in.read(bits.label, bytesRead, bits.label.length - bytesRead);
 			}
 
 			if ((flags & 0x80) != 0)
@@ -154,6 +183,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			{
 				Node left = new Node();
 				leftChild = left;
+				leftChild.parent = this;
 				left.readExternal(in);
 				subtreeSize += left.subtreeSize;
 			}
@@ -161,6 +191,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			{
 				Node right = new Node();
 				rightChild = right;
+				rightChild.parent = this;
 				right.readExternal(in);
 				subtreeSize += right.subtreeSize;
 			}
@@ -172,27 +203,20 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	 */
 	protected static class SearchPoint
 	{
-		public ArrayList<Node> lastMatchingNode;
-		public Node leftOver;
+		public Node lastMatchingNode;
+		public BitString leftOver;
 		public int bitsMatched;
 
 		public SearchPoint(Node n, byte[] s)
 		{
-			this.lastMatchingNode = new ArrayList<Node>();
-			this.lastMatchingNode.add(n);
-			this.leftOver = new Node(s);
+			this.lastMatchingNode = n;
+			this.leftOver = new BitString(s);
 		}
 
-		public SearchPoint(Node n, Node s)
+		public SearchPoint(Node n, BitString s)
 		{
-			this.lastMatchingNode = new ArrayList<Node>();
-			this.lastMatchingNode.add(n);
+			this.lastMatchingNode = n;
 			this.leftOver = s;
-		}
-
-		public Node getLastMatchingNode()
-		{
-			return lastMatchingNode.get(lastMatchingNode.size() - 1);
 		}
 	}
 
@@ -240,7 +264,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		}
 	}
 
-	public static void splitOnPrefix(Node prefixNode, Node suffixNode)
+	public static void splitOnPrefix(BitString prefixNode, BitString suffixNode)
 	{
 		int matchedBits = getCommonPrefixBits(prefixNode, suffixNode);
 		prefixNode.bitsUsed = matchedBits;
@@ -261,7 +285,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		suffixNode.bitsUsed -= matchedBits;
 	}
 
-	public static int getCommonPrefixBits(Node node1, Node node2)
+	public static int getCommonPrefixBits(BitString node1, BitString node2)
 	{
 		int matchedBits = 0;
 		int length1 = (int) Math.ceil(node1.bitsUsed / 8.);
@@ -294,9 +318,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		return matchedBits;
 	}
 
-	public static void appendOnNode(Node prefixNode, Node suffixNode)
+	public static void appendOnNode(BitString prefixNode, BitString suffixNode)
 	{
-		int requiredLength = (int) (Math.ceil(prefixNode.bitsUsed + suffixNode.bitsUsed / 8.));
+		int requiredLength = (int) (Math.ceil((prefixNode.bitsUsed + suffixNode.bitsUsed) / 8.));
 		if (requiredLength > prefixNode.label.length)
 			prefixNode.label = Arrays.copyOf(prefixNode.label, requiredLength);
 
@@ -327,12 +351,12 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	 */
 	protected transient Node r;
 
-	protected ByteArrayConversion converter;
+	protected transient ByteArrayConversion converter;
 
 	private transient boolean dirty = true;
 	private long dataBytesEstimate = 0;
 
-	protected transient Node childTrieLabel;
+	protected transient BitString childTrieLabel;
 
 	public BinaryPatriciaTrie()
 	{
@@ -362,42 +386,45 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	public int add(byte[] bytesToAdd)
 	{
 		SearchPoint lastNode = findLastNode(bytesToAdd);
-		if (lastNode.getLastMatchingNode().subtreeSize == 0)
+		if (lastNode.lastMatchingNode.subtreeSize == 0)
 			return lastNode.bitsMatched;
 
 		dataBytesEstimate += Math.ceil(lastNode.leftOver.bitsUsed / 8.);
 		if (lastNode.leftOver.bitsUsed > 0)
 		{
 			boolean goRight = (lastNode.leftOver.label[0] & 0x80) != 0;
-			Node existingEdge = goRight ? lastNode.getLastMatchingNode().rightChild : lastNode
-					.getLastMatchingNode().leftChild;
+			Node existingEdge = goRight ? lastNode.lastMatchingNode.rightChild
+					: lastNode.lastMatchingNode.leftChild;
 			if (existingEdge == null)
 			{
 				// New edge and node required.
-				Node newNode = lastNode.leftOver;
+				Node newNode = new Node(lastNode.leftOver);
 				newNode.valueEnd = true;
+				newNode.parent = lastNode.lastMatchingNode;
 				if (goRight)
-					lastNode.getLastMatchingNode().rightChild = newNode;
+					lastNode.lastMatchingNode.rightChild = newNode;
 				else
-					lastNode.getLastMatchingNode().leftChild = newNode;
-				incrementNodesToRoot(lastNode, 1);
+					lastNode.lastMatchingNode.leftChild = newNode;
+				incrementNodesToRoot(lastNode.lastMatchingNode, 1);
 			} else
 			{
 
 				/*
 				 * An existing edge needs to be split.
 				 */
-				int matchingBits = getCommonPrefixBits(lastNode.leftOver, existingEdge);
+				int matchingBits = getCommonPrefixBits(lastNode.leftOver, existingEdge.bits);
 
-				byte[] oldLabel = existingEdge.label;
+				byte[] oldLabel = existingEdge.bits.label;
 				Node internalNode = new Node(Arrays.copyOf(oldLabel,
 						(int) Math.ceil((double) matchingBits / 8)), matchingBits);
 				internalNode.subtreeSize = existingEdge.subtreeSize + 1;
 
-				splitOnPrefix(internalNode, lastNode.leftOver);
-				splitOnPrefix(internalNode, existingEdge);
+				splitOnPrefix(internalNode.bits, lastNode.leftOver);
+				splitOnPrefix(internalNode.bits, existingEdge.bits);
 
-				if ((existingEdge.label[0] & 0x80) != 0)
+				internalNode.parent = existingEdge.parent;
+				existingEdge.parent = internalNode;
+				if ((existingEdge.bits.label[0] & 0x80) != 0)
 					internalNode.rightChild = existingEdge;
 				else
 					internalNode.leftChild = existingEdge;
@@ -407,8 +434,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 					/*
 					 * The new string and label have some characters in common but not all.
 					 */
-					Node leafNode = lastNode.leftOver;
+					Node leafNode = new Node(lastNode.leftOver);
 					leafNode.valueEnd = true;
+					leafNode.parent = internalNode;
 					if (internalNode.leftChild == null)
 						internalNode.leftChild = leafNode;
 					else
@@ -420,29 +448,34 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 					internalNode.valueEnd = true;
 				}
 
-				if ((internalNode.label[0] & 0x80) != 0)
-					lastNode.getLastMatchingNode().rightChild = internalNode;
+				if ((internalNode.bits.label[0] & 0x80) != 0)
+					lastNode.lastMatchingNode.rightChild = internalNode;
 				else
-					lastNode.getLastMatchingNode().leftChild = internalNode;
-				incrementNodesToRoot(lastNode, internalNode.subtreeSize - existingEdge.subtreeSize);
+					lastNode.lastMatchingNode.leftChild = internalNode;
+				incrementNodesToRoot(lastNode.lastMatchingNode, internalNode.subtreeSize
+						- existingEdge.subtreeSize);
 			}
 			n++;
 			dirty = true;
 			return 0;
-		} else if (!lastNode.getLastMatchingNode().valueEnd)
+		} else if (!lastNode.lastMatchingNode.valueEnd)
 		{
 			n++;
-			lastNode.getLastMatchingNode().valueEnd = true;
+			lastNode.lastMatchingNode.valueEnd = true;
 			dirty = true;
 			return 0;
 		}
 		return -1;
 	}
 
-	private void incrementNodesToRoot(SearchPoint lastNode, int increment)
+	private void incrementNodesToRoot(Node lastNode, int increment)
 	{
-		for (Node pathNode : lastNode.lastMatchingNode)
-			pathNode.subtreeSize += increment;
+		Node node = lastNode;
+		while (node != null)
+		{
+			node.subtreeSize += increment;
+			node = node.parent;
+		}
 	}
 
 	public byte[] convertToBytes(T x)
@@ -479,37 +512,37 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	{
 		SearchPoint result = new SearchPoint(r, Arrays.copyOf(s, s.length));
 		result.leftOver.bitsUsed = bitsUsed;
-		if (r.bitsUsed != 0)
+		if (r.bits.bitsUsed != 0)
 		{
-			if (getCommonPrefixBits(r, result.leftOver) == r.bitsUsed)
+			if (getCommonPrefixBits(r.bits, result.leftOver) == r.bits.bitsUsed)
 			{
-				splitOnPrefix(r, result.leftOver);
-				result.bitsMatched += r.bitsUsed;
+				splitOnPrefix(r.bits, result.leftOver);
+				result.bitsMatched += r.bits.bitsUsed;
 			} else
-				result.leftOver = new Node(new byte[0]);
+				result.leftOver = new BitString(new byte[0]);
 		}
 
-		while (result.leftOver.bitsUsed > 0 && result.getLastMatchingNode().subtreeSize != 0)
+		while (result.leftOver.bitsUsed > 0 && result.lastMatchingNode.subtreeSize != 0)
 		{
 			Node selectedEdge;
 			if ((result.leftOver.label[0] & 0x80) != 0)
-				selectedEdge = result.getLastMatchingNode().rightChild;
+				selectedEdge = result.lastMatchingNode.rightChild;
 			else
-				selectedEdge = result.getLastMatchingNode().leftChild;
+				selectedEdge = result.lastMatchingNode.leftChild;
 			if (selectedEdge == null)
 				break;
-			int labelLength = selectedEdge.bitsUsed;
+			int labelLength = selectedEdge.bits.bitsUsed;
 			if (result.leftOver.bitsUsed < labelLength)
 				break;
 
-			int matchingBits = getCommonPrefixBits(result.leftOver, selectedEdge);
-			if (matchingBits == selectedEdge.bitsUsed)
-				splitOnPrefix(selectedEdge, result.leftOver);
+			int matchingBits = getCommonPrefixBits(result.leftOver, selectedEdge.bits);
+			if (matchingBits == selectedEdge.bits.bitsUsed)
+				splitOnPrefix(selectedEdge.bits, result.leftOver);
 			else
 				break;
 
-			result.bitsMatched += selectedEdge.bitsUsed;
-			result.lastMatchingNode.add(selectedEdge);
+			result.bitsMatched += selectedEdge.bits.bitsUsed;
+			result.lastMatchingNode = selectedEdge;
 		}
 
 		return result;
@@ -535,34 +568,33 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	{
 		// Find the parent node of the node to be deleted.
 		SearchPoint result = findLastNode(bytesToRemove);
-		if (result.getLastMatchingNode().subtreeSize == 0)
+		if (result.lastMatchingNode.subtreeSize == 0)
 			return result.bitsMatched;
 
 		if (result.leftOver.bitsUsed != 0)
 			return -1;
 
-		Node deleteNode = result.getLastMatchingNode();
+		Node deleteNode = result.lastMatchingNode;
 		if (!deleteNode.valueEnd)
 			return -1;
 		deleteNode.valueEnd = false;
 
-		result.lastMatchingNode.remove(result.lastMatchingNode.size() - 1);
-		cleanupNodeStructure(result, deleteNode);
+		cleanupNodeStructure(deleteNode);
 
 		n--;
 		dirty = true;
 		return 0;
 	}
 
-	private void cleanupNodeStructure(SearchPoint searchPathToParent, Node deleteNode)
+	private void cleanupNodeStructure(Node deleteNode)
 	{
 		if (deleteNode == r)
 			return;
 
-		Node parentNode = searchPathToParent.getLastMatchingNode();
+		Node parentNode = deleteNode.parent;
 		if (deleteNode.leftChild == null && deleteNode.rightChild == null)
 		{
-			dataBytesEstimate -= Math.ceil(deleteNode.bitsUsed / 8.);
+			dataBytesEstimate -= Math.ceil(deleteNode.bits.bitsUsed / 8.);
 			// Remove the link from the parent node to the deleted node.
 			if (parentNode.leftChild == deleteNode)
 				parentNode.leftChild = null;
@@ -575,21 +607,18 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				 * If the internal node now has 1 child, it must be compressed. We need it's parent
 				 * now.
 				 */
-				Node parentParentNode = searchPathToParent.lastMatchingNode
-						.get(searchPathToParent.lastMatchingNode.size() - 2);
+				Node parentParentNode = parentNode.parent;
 				compressNode(parentParentNode, parentNode);
-				searchPathToParent.lastMatchingNode.remove(searchPathToParent.lastMatchingNode
-						.size() - 1);
-				incrementNodesToRoot(searchPathToParent, -2);
+				incrementNodesToRoot(parentParentNode, -2);
 			} else
-				incrementNodesToRoot(searchPathToParent, -1);
+				incrementNodesToRoot(parentNode, -1);
 		} else
 		{
 			// The node has childen so it can't be removed. It may be compressable though.
 			if (deleteNode != r && (deleteNode.leftChild == null || deleteNode.rightChild == null))
 			{
 				compressNode(parentNode, deleteNode);
-				incrementNodesToRoot(searchPathToParent, -1);
+				incrementNodesToRoot(parentNode, -1);
 			}
 		}
 	}
@@ -611,9 +640,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		else
 			newChild = compressNode.rightChild;
 
-		appendOnNode(compressNode, newChild);
-		newChild.label = compressNode.label;
-		newChild.bitsUsed = compressNode.bitsUsed;
+		appendOnNode(compressNode.bits, newChild.bits);
+		newChild.bits = compressNode.bits;
+		newChild.parent = parent;
 		if (parent.leftChild == compressNode)
 			parent.leftChild = newChild;
 		else
@@ -637,10 +666,10 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	public int contains(byte[] bytesToFind)
 	{
 		SearchPoint result = findLastNode(bytesToFind);
-		if (result.getLastMatchingNode().subtreeSize == 0)
+		if (result.lastMatchingNode.subtreeSize == 0)
 			return result.bitsMatched;
 
-		if (result.leftOver.bitsUsed == 0 && result.getLastMatchingNode().valueEnd)
+		if (result.leftOver.bitsUsed == 0 && result.lastMatchingNode.valueEnd)
 			return 0;
 		return -1;
 	}
@@ -648,8 +677,8 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	@Override
 	public long getByteSize()
 	{
-		// 16 base class, 24 BAConversion, 32 class variables
-		return dataBytesEstimate + r.subtreeSize * BYTES_PER_NODE + 72;
+		// 16 base class, 24 BAConversion, 32 class variables, 64 child trie label
+		return dataBytesEstimate + r.subtreeSize * BYTES_PER_NODE + 136;
 	}
 
 	@Override
@@ -672,28 +701,29 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		public TrieIteratorParent(byte[] prefix)
 		{
 			SearchPoint result = findLastNode(prefix);
-			Node matchedBits = new Node(new byte[prefix.length], 0);
-			for (Node n : result.lastMatchingNode)
-				appendOnNode(matchedBits, n);
+			BitString matchedBits = new BitString(Arrays.copyOf(prefix, prefix.length),
+					result.bitsMatched);
+			if (result.lastMatchingNode == r && result.bitsMatched == 0)
+				appendOnNode(matchedBits, result.lastMatchingNode.bits);
 
 			Node traverseEdge;
-			if (result.leftOver.bitsUsed > 0 && result.getLastMatchingNode().subtreeSize != 0)
+			if (result.leftOver.bitsUsed > 0 && result.lastMatchingNode.subtreeSize != 0)
 			{
 				if ((result.leftOver.label[0] & 0x80) != 0)
-					traverseEdge = result.getLastMatchingNode().rightChild;
+					traverseEdge = result.lastMatchingNode.rightChild;
 				else
-					traverseEdge = result.getLastMatchingNode().leftChild;
+					traverseEdge = result.lastMatchingNode.leftChild;
 				if (traverseEdge == null)
 					return;
 
-				int matchingBits = getCommonPrefixBits(traverseEdge, result.leftOver);
+				int matchingBits = getCommonPrefixBits(traverseEdge.bits, result.leftOver);
 				if (matchingBits != result.leftOver.bitsUsed)
 					return;
-				appendOnNode(matchedBits, traverseEdge);
-				result.lastMatchingNode.add(traverseEdge);
+				appendOnNode(matchedBits, traverseEdge.bits);
+				result.lastMatchingNode = traverseEdge;
 			}
 
-			uncheckNodes.add(new SearchPoint(result.getLastMatchingNode(), matchedBits));
+			uncheckNodes.add(new SearchPoint(result.lastMatchingNode, matchedBits));
 		}
 
 		public boolean hasNext()
@@ -705,14 +735,13 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			{
 				SearchPoint result = uncheckNodes.remove(uncheckNodes.size() - 1);
 
-				Node rightChild = result.getLastMatchingNode().rightChild;
+				Node rightChild = result.lastMatchingNode.rightChild;
 				generateSearchNode(result, uncheckNodes, rightChild);
 
-				Node leftChild = result.getLastMatchingNode().leftChild;
+				Node leftChild = result.lastMatchingNode.leftChild;
 				generateSearchNode(result, uncheckNodes, leftChild);
 
-				if (result.getLastMatchingNode().valueEnd
-						|| result.getLastMatchingNode().subtreeSize == 0)
+				if (result.lastMatchingNode.valueEnd || result.lastMatchingNode.subtreeSize == 0)
 				{
 					nextResult = getNextReturnResult(result);
 					return true;
@@ -742,10 +771,10 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		{
 			if (child != null)
 			{
-				Node newMatchingString = new Node(Arrays.copyOf(result.leftOver.label,
-						result.leftOver.label.length + child.label.length),
+				BitString newMatchingString = new BitString(Arrays.copyOf(result.leftOver.label,
+						(int) Math.ceil((result.leftOver.bitsUsed + child.bits.bitsUsed) / 8.)),
 						result.leftOver.bitsUsed);
-				appendOnNode(newMatchingString, child);
+				appendOnNode(newMatchingString, child.bits);
 				uncheckNodes.add(new SearchPoint(child, newMatchingString));
 			}
 		}
@@ -828,39 +857,40 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		BinaryPatriciaTrie<T> result = new BinaryPatriciaTrie<T>();
 		result.converter = converter;
 
-		int upperBoundSize = r.subtreeSize / 3 * 2;
+		int upperBoundSize = r.subtreeSize / 3 * 2; // TODO split lower if better
 
-		ArrayList<Node> parents = new ArrayList<Node>();
 		Node curNode = r;
 		int curDepth = 0;
-		Node matchedLabel = new Node(new byte[0]);
+		BitString matchedLabel = new BitString(new byte[0]);
 		while (curNode != null)
 		{
-			if (curNode.bitsUsed > 0)
-				appendOnNode(matchedLabel, curNode);
-
-			parents.add(curNode);
+			if (curNode.bits.bitsUsed > 0)
+				appendOnNode(matchedLabel, curNode.bits);
 
 			int leftSize = (curNode.leftChild != null) ? curNode.leftChild.subtreeSize : 0;
 			int rightSize = (curNode.rightChild != null) ? curNode.rightChild.subtreeSize : 0;
 			if (leftSize >= rightSize && (curDepth >= minPartitionDepth || leftSize == 1)
 					&& leftSize <= upperBoundSize && leftSize > 0)
 			{
-				appendOnNode(matchedLabel, curNode.leftChild);
-				Node pointerNode = new Node(Arrays.copyOf(curNode.leftChild.label,
-						curNode.leftChild.label.length), curNode.leftChild.bitsUsed);
+				appendOnNode(matchedLabel, curNode.leftChild.bits);
+				Node pointerNode = new Node(Arrays.copyOf(curNode.leftChild.bits.label,
+						curNode.leftChild.bits.label.length), curNode.leftChild.bits.bitsUsed);
 				pointerNode.subtreeSize = 0;
+				pointerNode.parent = curNode;
 				result.r = curNode.leftChild;
+				result.r.parent = null;
 				curNode.leftChild = pointerNode;
 				break;
 			} else if (rightSize > leftSize && (curDepth >= minPartitionDepth || rightSize == 1)
 					&& rightSize <= upperBoundSize)
 			{
-				appendOnNode(matchedLabel, curNode.rightChild);
-				Node pointerNode = new Node(Arrays.copyOf(curNode.rightChild.label,
-						curNode.rightChild.label.length), curNode.rightChild.bitsUsed);
+				appendOnNode(matchedLabel, curNode.rightChild.bits);
+				Node pointerNode = new Node(Arrays.copyOf(curNode.rightChild.bits.label,
+						curNode.rightChild.bits.label.length), curNode.rightChild.bits.bitsUsed);
 				pointerNode.subtreeSize = 0;
+				pointerNode.parent = curNode;
 				result.r = curNode.rightChild;
+				result.r.parent = null;
 				curNode.rightChild = pointerNode;
 				break;
 			} else
@@ -875,10 +905,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 		result.dataBytesEstimate = dataBytesEstimate * result.r.subtreeSize / r.subtreeSize;
 		dataBytesEstimate -= result.dataBytesEstimate;
-		for (Node n : parents)
-			n.subtreeSize -= result.r.subtreeSize;
-		result.r.bitsUsed = matchedLabel.bitsUsed;
-		result.r.label = Arrays.copyOf(matchedLabel.label, matchedLabel.label.length);
+		incrementNodesToRoot(curNode, -result.r.subtreeSize);
+		result.r.bits.bitsUsed = matchedLabel.bitsUsed;
+		result.r.bits.label = Arrays.copyOf(matchedLabel.label, matchedLabel.label.length);
 		childTrieLabel = matchedLabel;
 		dirty = true;
 
@@ -890,29 +919,28 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	{
 		BinaryPatriciaTrie<T> childTrie = (BinaryPatriciaTrie<T>) t;
 		if (childTrieLabel != null
-				&& getCommonPrefixBits(childTrieLabel, childTrie.r) == childTrieLabel.bitsUsed)
+				&& getCommonPrefixBits(childTrieLabel, childTrie.r.bits) == childTrieLabel.bitsUsed)
 			childTrieLabel = childTrie.childTrieLabel;
 
-		SearchPoint pointer = findLastNode(childTrie.r.label);
-		Node parentOfPointer = pointer.lastMatchingNode.get(pointer.lastMatchingNode.size() - 2);
-		if (parentOfPointer.leftChild == pointer.getLastMatchingNode())
+		SearchPoint pointer = findLastNode(childTrie.r.bits.label);
+		Node parentOfPointer = pointer.lastMatchingNode.parent;
+		if (parentOfPointer.leftChild == pointer.lastMatchingNode)
 			parentOfPointer.leftChild = childTrie.r;
 		else
 			parentOfPointer.rightChild = childTrie.r;
+		childTrie.r.parent = parentOfPointer;
 
 		// Change merged root node to be only an appended string instead of a full value string.
-		splitOnPrefix(
-				new Node(childTrie.r.label, childTrie.r.bitsUsed
-						- pointer.getLastMatchingNode().bitsUsed), childTrie.r);
+		splitOnPrefix(new BitString(childTrie.r.bits.label, childTrie.r.bits.bitsUsed
+				- pointer.lastMatchingNode.bits.bitsUsed), childTrie.r.bits);
 
 		dataBytesEstimate += childTrie.dataBytesEstimate;
 
-		pointer.lastMatchingNode.remove(pointer.lastMatchingNode.size() - 1);
-		incrementNodesToRoot(pointer, childTrie.r.subtreeSize);
+		incrementNodesToRoot(pointer.lastMatchingNode.parent, childTrie.r.subtreeSize);
 		dirty = true;
 
 		if (!childTrie.r.valueEnd)
-			cleanupNodeStructure(pointer, childTrie.r);
+			cleanupNodeStructure(childTrie.r);
 
 		return true;
 	}
@@ -953,7 +981,10 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		if (r != null)
 			r.writeExternal(s);
 		if (childTrieLabel != null)
-			childTrieLabel.writeExternal(s);
+		{
+			s.writeInt(childTrieLabel.bitsUsed);
+			s.write(childTrieLabel.label, 0, (int) Math.ceil(childTrieLabel.bitsUsed / 8.));
+		}
 	}
 
 	private void readObject(ObjectInputStream inputStream) throws IOException,
@@ -970,8 +1001,16 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		}
 		if ((flags & 0x40) != 0)
 		{
-			childTrieLabel = new Node();
-			childTrieLabel.readExternal(inputStream);
+			childTrieLabel = new BitString();
+			childTrieLabel.bitsUsed = inputStream.readInt();
+
+			childTrieLabel.label = new byte[(int) Math.ceil(childTrieLabel.bitsUsed / 8.)];
+			int bytesRead = 0;
+			while (bytesRead < childTrieLabel.label.length)
+			{
+				bytesRead += inputStream.read(childTrieLabel.label, bytesRead,
+						childTrieLabel.label.length - bytesRead);
+			}
 		}
 	}
 

@@ -93,7 +93,7 @@ public class BinaryPatriciaTrieTest
 		while (!nodes.isEmpty())
 		{
 			Node n = nodes.remove(nodes.size() - 1);
-			assertTrue(n.bitsUsed == 0 || n.subtreeSize == 0 || n.leftChild != null
+			assertTrue(n.bits.bitsUsed == 0 || n.subtreeSize == 0 || n.leftChild != null
 					&& n.rightChild != null || n.valueEnd);
 			if (n.subtreeSize != 0)
 				assertEquals(1 + (n.leftChild != null ? n.leftChild.subtreeSize : 0)
@@ -362,7 +362,7 @@ public class BinaryPatriciaTrieTest
 		while (iter.hasNext())
 		{
 			SearchPoint point = iter.next();
-			if (point.getLastMatchingNode().subtreeSize == 0)
+			if (point.lastMatchingNode.subtreeSize == 0)
 			{
 				pointerNode = point;
 				break;

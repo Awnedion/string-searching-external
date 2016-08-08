@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Stack;
 
+import ods.string.search.partition.BinaryPatriciaTrie.ByteArrayConversion;
 import ods.string.search.partition.BinaryPatriciaTrie.SearchPoint;
 import ods.string.search.partition.ExternalMemoryObjectCache.CompressType;
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
@@ -86,7 +87,8 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		{
 			BinaryPatriciaTrie<T> newTrie = (BinaryPatriciaTrie<T>) curTrie.split(null,
 					minPartitionDepth);
-			trieCache.register(getTrieIdFromBytes(newTrie.r.label, newTrie.r.bitsUsed), newTrie);
+			trieCache.register(getTrieIdFromBytes(newTrie.r.bits.label, newTrie.r.bits.bitsUsed),
+					newTrie);
 		}
 	}
 
@@ -206,6 +208,7 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		private Stack<Iterator<SearchPoint>> iterators = new Stack<Iterator<SearchPoint>>();
 		private T nextResult;
 		private byte[] prefix;
+		private ByteArrayConversion converter;
 
 		public EMTrieIterator(byte[] prefix)
 		{
@@ -220,7 +223,6 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 			if (nextResult != null)
 				return true;
 
-			BinaryPatriciaTrie<T> root = trieCache.get("~");
 			Iterator<SearchPoint> curIter = null;
 			while (!iterators.isEmpty() && nextResult == null)
 			{
@@ -230,14 +232,21 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 					return false;
 
 				SearchPoint node = curIter.next();
-				if (node.getLastMatchingNode().subtreeSize == 0)
+				if (node.lastMatchingNode.subtreeSize == 0)
 				{
 					iterators.push(curIter);
 					curIter = trieCache.get(
 							getTrieIdFromBytes(node.leftOver.label, node.leftOver.bitsUsed))
 							.iterator(prefix);
 				} else
-					nextResult = (T) root.converter.readFromBytes(node.leftOver.label);
+				{
+					if (converter == null)
+					{
+						BinaryPatriciaTrie<T> root = trieCache.get("~");
+						converter = root.converter;
+					}
+					nextResult = (T) converter.readFromBytes(node.leftOver.label);
+				}
 				iterators.push(curIter);
 			}
 

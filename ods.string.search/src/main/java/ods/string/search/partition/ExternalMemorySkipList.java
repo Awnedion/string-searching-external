@@ -141,16 +141,15 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	public boolean add(T u)
 	{
 		SubList<T> root = listCache.get("-" + maxHeight);
-		ArrayList<ListLayerEntry> insertionPath = new ArrayList<ListLayerEntry>();
+		ArrayList<String> insertionPath = new ArrayList<String>(maxHeight);
 		if (!find(u, root, maxHeight, "", insertionPath))
 		{
 			boolean promotion = false;
 			for (int x = 0; x < insertionPath.size(); x++)
 			{
-				ListLayerEntry listLayerEntry = insertionPath.get(x);
-				if (!(promotion = promoteOrInsert(u,
-						listCache.get(listLayerEntry.listPartitionKey),
-						listLayerEntry.listPartitionKey, x + 1)))
+				String listLayerEntry = insertionPath.get(x);
+				if (!(promotion = promoteOrInsert(u, listCache.get(listLayerEntry), listLayerEntry,
+						x + 1)))
 					break;
 			}
 			size++;
@@ -203,11 +202,11 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	@Override
 	public boolean remove(T x)
 	{
-		ArrayList<ListLayerEntry> findPath = new ArrayList<ListLayerEntry>();
+		ArrayList<String> findPath = new ArrayList<String>(maxHeight);
 		if (find(x, listCache.get("-" + maxHeight), maxHeight, "", findPath))
 		{
-			ListLayerEntry deepestLayerFind = findPath.get(0);
-			SubList<T> subList = listCache.get(deepestLayerFind.listPartitionKey);
+			String deepestLayerFind = findPath.get(0);
+			SubList<T> subList = listCache.get(deepestLayerFind);
 			subList.structure.remove(x);
 
 			int deletionHeight = maxHeight - findPath.size();
@@ -247,19 +246,9 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		return find(x, root, maxHeight, "", null);
 	}
 
-	private class ListLayerEntry
-	{
-		public String listPartitionKey;
-
-		public ListLayerEntry(String listPartitionKey)
-		{
-			this.listPartitionKey = listPartitionKey;
-		}
-	}
-
 	@SuppressWarnings("unchecked")
 	private boolean find(T u, SubList<T> startPartition, int height, String parentKey,
-			List<ListLayerEntry> layerTraversalPath)
+			List<String> layerTraversalPath)
 	{
 		boolean result = false;
 		int x = 0;
@@ -285,7 +274,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 					if (u.equals(floorVal))
 					{
 						if (layerTraversalPath != null)
-							layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height));
+							layerTraversalPath.add(parentKey + "-" + height);
 						return true;
 					}
 				} else
@@ -333,7 +322,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		}
 
 		if (layerTraversalPath != null)
-			layerTraversalPath.add(new ListLayerEntry(parentKey + "-" + height));
+			layerTraversalPath.add(parentKey + "-" + height);
 		return result;
 	}
 
@@ -374,9 +363,9 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			lastResult = startValue;
 			this.endValue = endValue;
 
-			ArrayList<ListLayerEntry> findPath = new ArrayList<ListLayerEntry>();
+			ArrayList<String> findPath = new ArrayList<String>(maxHeight);
 			find(startValue, listCache.get("-" + maxHeight), maxHeight, "", findPath);
-			String partitionKey = findPath.get(0).listPartitionKey;
+			String partitionKey = findPath.get(0);
 			if (!partitionKey.endsWith("-1"))
 			{
 				partitionKey = startValue + "-1";
