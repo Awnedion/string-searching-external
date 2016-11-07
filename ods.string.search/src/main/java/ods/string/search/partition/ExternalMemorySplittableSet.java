@@ -281,20 +281,19 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		private TreeNode<T> curNode;
 		private Iterator<T> currentSetIter;
 
-		private T prev;
+		private T nextElem;
 
 		private T to;
 
 		public EMSetIterator(T from, T to)
 		{
-			this.prev = from;
 			this.to = to;
 
 			if (from != null)
 			{
 				String[] searchPath = getLeafNodeForElem(from);
 				curNode = setCache.get(searchPath[0]);
-				currentSetIter = curNode.structure.iterator(from, to);
+				currentSetIter = curNode.structure.iterator(from, null);
 			} else
 			{
 				curNode = setCache.get("-1");
@@ -305,23 +304,28 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		@Override
 		public boolean hasNext()
 		{
-			if (!currentSetIter.hasNext() && (to == null || prev.compareTo(to) < 0))
+			if (nextElem == null)
 			{
-				if (curNode.nextPartitionId != null)
+				if (!currentSetIter.hasNext())
 				{
-					curNode = setCache.get(curNode.nextPartitionId);
-					currentSetIter = curNode.structure.iterator(prev, to);
+					if (curNode.nextPartitionId != null)
+					{
+						curNode = setCache.get(curNode.nextPartitionId);
+						currentSetIter = curNode.structure.iterator();
+					}
 				}
+				if (currentSetIter.hasNext())
+					nextElem = currentSetIter.next();
 			}
 
-			return currentSetIter.hasNext();
+			return nextElem != null && (to == null || nextElem.compareTo(to) < 0);
 		}
 
 		@Override
 		public T next()
 		{
-			T result = currentSetIter.next();
-			prev = result;
+			T result = nextElem;
+			nextElem = null;
 
 			return result;
 		}
@@ -329,7 +333,7 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		@Override
 		public void remove()
 		{
-			ExternalMemorySplittableSet.this.remove(prev);
+			throw new UnsupportedOperationException();
 		}
 
 	}

@@ -113,9 +113,13 @@ public class ExternalizableListSet<T extends Serializable & Comparable<T>> imple
 		int fromIndex = findIndex(from);
 		if (fromIndex < 0)
 			fromIndex = Math.abs(fromIndex) - 1;
-		int toIndex = findIndex(to);
-		if (toIndex < 0)
-			toIndex = Math.abs(toIndex) - 1;
+		int toIndex = linkedList.size();
+		if (to != null)
+		{
+			toIndex = findIndex(to);
+			if (toIndex < 0)
+				toIndex = Math.abs(toIndex) - 1;
+		}
 		return linkedList.subList(fromIndex, toIndex).iterator();
 	}
 

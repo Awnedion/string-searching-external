@@ -857,7 +857,7 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		BinaryPatriciaTrie<T> result = new BinaryPatriciaTrie<T>();
 		result.converter = converter;
 
-		int upperBoundSize = r.subtreeSize / 3 * 2; // TODO split lower if better
+		int idealSize = r.subtreeSize >> 1;
 
 		Node curNode = r;
 		int curDepth = 0;
@@ -869,48 +869,47 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 
 			int leftSize = (curNode.leftChild != null) ? curNode.leftChild.subtreeSize : 0;
 			int rightSize = (curNode.rightChild != null) ? curNode.rightChild.subtreeSize : 0;
-			if (leftSize >= rightSize && (curDepth >= minPartitionDepth || leftSize == 1)
-					&& leftSize <= upperBoundSize && leftSize > 0)
+			Node nextNode = null;
+			int nextMidDiff = Integer.MAX_VALUE;
+			if (leftSize >= rightSize)
 			{
-				appendOnNode(matchedLabel, curNode.leftChild.bits);
-				Node pointerNode = new Node(Arrays.copyOf(curNode.leftChild.bits.label,
-						curNode.leftChild.bits.label.length), curNode.leftChild.bits.bitsUsed);
-				pointerNode.subtreeSize = 0;
-				pointerNode.parent = curNode;
-				result.r = curNode.leftChild;
-				result.r.parent = null;
-				curNode.leftChild = pointerNode;
-				break;
-			} else if (rightSize > leftSize && (curDepth >= minPartitionDepth || rightSize == 1)
-					&& rightSize <= upperBoundSize)
-			{
-				appendOnNode(matchedLabel, curNode.rightChild.bits);
-				Node pointerNode = new Node(Arrays.copyOf(curNode.rightChild.bits.label,
-						curNode.rightChild.bits.label.length), curNode.rightChild.bits.bitsUsed);
-				pointerNode.subtreeSize = 0;
-				pointerNode.parent = curNode;
-				result.r = curNode.rightChild;
-				result.r.parent = null;
-				curNode.rightChild = pointerNode;
-				break;
+				nextNode = curNode.leftChild;
+				nextMidDiff = Math.abs(idealSize - leftSize);
 			} else
 			{
-				if (leftSize > rightSize)
-					curNode = curNode.leftChild;
-				else
-					curNode = curNode.rightChild;
-				curDepth++;
+				nextNode = curNode.rightChild;
+				nextMidDiff = Math.abs(idealSize - rightSize);
 			}
+
+			if (Math.abs(curNode.subtreeSize - idealSize) < nextMidDiff
+					&& (curDepth >= minPartitionDepth || curNode.subtreeSize == 1))
+			{
+				Node pointerNode = new Node(Arrays.copyOf(curNode.bits.label,
+						curNode.bits.label.length), curNode.bits.bitsUsed);
+				pointerNode.subtreeSize = 0;
+				pointerNode.parent = curNode.parent;
+				result.r = curNode;
+				if (curNode.parent.leftChild == curNode)
+					curNode.parent.leftChild = pointerNode;
+				else
+					curNode.parent.rightChild = pointerNode;
+				result.r.parent = null;
+				curNode = pointerNode;
+				break;
+			}
+
+			curNode = nextNode;
+			curDepth++;
 		}
 
 		result.dataBytesEstimate = dataBytesEstimate * result.r.subtreeSize / r.subtreeSize;
 		dataBytesEstimate -= result.dataBytesEstimate;
-		incrementNodesToRoot(curNode, -result.r.subtreeSize);
+		incrementNodesToRoot(curNode.parent, -result.r.subtreeSize);
 		result.r.bits.bitsUsed = matchedLabel.bitsUsed;
 		result.r.bits.label = Arrays.copyOf(matchedLabel.label, matchedLabel.label.length);
 		childTrieLabel = matchedLabel;
 		dirty = true;
-
+		// System.out.println(r.subtreeSize + " " + result.r.subtreeSize + " " + curDepth);
 		return result;
 	}
 

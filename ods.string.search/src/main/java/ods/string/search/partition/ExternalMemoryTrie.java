@@ -137,8 +137,10 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 			 * Merge this trie with another if it is smaller than maxSetSize/8 or
 			 * maxSetSize/(2^minPartitionDepth) if a min depth is being used.
 			 */
+			int minTrieSize = (minPartitionDepth <= 1 ? maxSetSize / 6
+					: (maxSetSize >> (minPartitionDepth + 1)));
 			if ((curTrie.childTrieLabel != null || parentTrie != null)
-					&& curTrie.r.subtreeSize <= (maxSetSize >> Math.max(3, minPartitionDepth + 1)))
+					&& curTrie.r.subtreeSize <= minTrieSize)
 			{
 				BinaryPatriciaTrie<T> topTrie;
 				BinaryPatriciaTrie<T> bottomTrie;

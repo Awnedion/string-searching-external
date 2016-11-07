@@ -466,14 +466,14 @@ public class PerformanceReportITCase
 
 		for (PartitionImplementation pi : partitionImpls)
 		{
-			cases.add(new ReportCase("BTree-Word-" + pi.name + "-50",
-					new ExternalMemorySplittableSet<String>(tmpDir, 50, 50000000l,
-							(SplittableSet<String>) pi.impl), InputType.WORDS));
 			cases.add(new ReportCase("BTree-Word-" + pi.name + "-100",
 					new ExternalMemorySplittableSet<String>(tmpDir, 100, 50000000l,
 							(SplittableSet<String>) pi.impl), InputType.WORDS));
 			cases.add(new ReportCase("BTree-Word-" + pi.name + "-200",
 					new ExternalMemorySplittableSet<String>(tmpDir, 200, 50000000l,
+							(SplittableSet<String>) pi.impl), InputType.WORDS));
+			cases.add(new ReportCase("BTree-Word-" + pi.name + "-400",
+					new ExternalMemorySplittableSet<String>(tmpDir, 400, 50000000l,
 							(SplittableSet<String>) pi.impl), InputType.WORDS));
 		}
 
@@ -559,8 +559,8 @@ public class PerformanceReportITCase
 		ArrayList<PartitionImplementation> partitionImpls = new ArrayList<PartitionImplementation>();
 		partitionImpls.add(new PartitionImplementation("EvenSplits",
 				new ExternalMemoryTrie<String>(tmpDir, 50, 50000000l, 0)));
-		partitionImpls.add(new PartitionImplementation("4MinDepth", new ExternalMemoryTrie<String>(
-				tmpDir, 50, 50000000l, 4)));
+		partitionImpls.add(new PartitionImplementation("5MinDepth", new ExternalMemoryTrie<String>(
+				tmpDir, 50, 50000000l, 5)));
 		partitionImpls.add(new PartitionImplementation("8MinDepth", new ExternalMemoryTrie<String>(
 				tmpDir, 50, 50000000l, 8), 2));
 

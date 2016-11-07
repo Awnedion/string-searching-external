@@ -348,7 +348,7 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 	{
 		public SubList<T> subList;
 		public Iterator<T> iter;
-		private T lastResult;
+		private T nextResult;
 
 		private T endValue;
 
@@ -360,7 +360,6 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 
 		public EMSkipIterator(T startValue, T endValue)
 		{
-			lastResult = startValue;
 			this.endValue = endValue;
 
 			ArrayList<String> findPath = new ArrayList<String>(maxHeight);
@@ -370,12 +369,12 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 			{
 				partitionKey = startValue + "-1";
 				subList = listCache.get(partitionKey);
-				if (endValue != null && lastResult.compareTo(endValue) >= 0)
-					iter = subList.structure.iterator(lastResult, endValue);
+				nextResult = startValue;
+				iter = subList.structure.iterator(startValue, null);
 			} else
 			{
 				subList = listCache.get(partitionKey);
-				iter = subList.structure.iterator(lastResult, endValue);
+				iter = subList.structure.iterator(startValue, null);
 			}
 		}
 
@@ -383,45 +382,43 @@ public class ExternalMemorySkipList<T extends Comparable<T> & Serializable> impl
 		@Override
 		public boolean hasNext()
 		{
-			if (iter != null && !iter.hasNext() && subList.nextPartitionId != null)
+			if (nextResult == null)
 			{
-				int lastDashIndex = subList.nextPartitionId.lastIndexOf("-");
-				String partitionIdStrVal = subList.nextPartitionId.substring(0, lastDashIndex);
-				T partitionIdVal;
-				subList = listCache.get(subList.nextPartitionId);
-				try
+				if (!iter.hasNext() && subList.nextPartitionId != null)
 				{
-					if (lastDashIndex > 0)
+					int lastDashIndex = subList.nextPartitionId.lastIndexOf("-");
+					String partitionIdStrVal = subList.nextPartitionId.substring(0, lastDashIndex);
+					T partitionIdVal;
+					subList = listCache.get(subList.nextPartitionId);
+					iter = subList.structure.iterator();
+					try
 					{
-						partitionIdVal = (T) comparableConstructor.newInstance(partitionIdStrVal);
-						if (endValue == null || partitionIdVal.compareTo(endValue) < 0)
+						if (lastDashIndex > 0)
 						{
-							lastResult = partitionIdVal;
-							iter = null;
+							partitionIdVal = (T) comparableConstructor
+									.newInstance(partitionIdStrVal);
+							if (endValue == null || partitionIdVal.compareTo(endValue) < 0)
+								nextResult = partitionIdVal;
 						}
-					} else
-						iter = subList.structure.iterator(lastResult, endValue);
-				} catch (Exception e)
-				{
-					throw new RuntimeException(e);
+					} catch (Exception e)
+					{
+						throw new RuntimeException(e);
+					}
 				}
+				if (nextResult == null && iter.hasNext())
+					nextResult = iter.next();
 			}
 
-			return iter == null || iter.hasNext();
+			return nextResult != null && (endValue == null || nextResult.compareTo(endValue) < 0);
 		}
 
 		@Override
 		public T next()
 		{
-			T result = null;
-			if (iter == null)
-			{
-				result = lastResult;
-				iter = subList.structure.iterator(lastResult, endValue);
-			} else
-				result = iter.next();
-			lastResult = result;
-			return lastResult;
+			T result = nextResult;
+			nextResult = null;
+
+			return result;
 		}
 
 		@Override

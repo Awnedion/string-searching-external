@@ -107,12 +107,9 @@ public class SplittableTreeSetAdapter<T extends Comparable<T> & Serializable> im
 		boolean endInclusive = false;
 		if (from == null)
 			from = adaptee.first();
-		if (to == null)
-		{
-			to = adaptee.last();
-			endInclusive = true;
-		}
 
+		if (to == null)
+			return adaptee.tailSet(from, true).iterator();
 		return adaptee.subSet(from, true, to, endInclusive).iterator();
 	}
 
