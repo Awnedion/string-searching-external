@@ -11,18 +11,41 @@ import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 import ods.string.search.partition.splitsets.SplittableSet;
 import ods.string.search.partition.splitsets.Treap;
 
+/**
+ * This class represents a B+ Tree that also makes use of caching to disk to increase storage
+ * limits. The leaf nodes have pointers to next leaf nodes to speed up range searches.
+ */
 public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable> implements
 		EMPrefixSearchableSet<T>
 {
 
+	/**
+	 * A node in the B+ Tree knows it's height to assist in retrieving block IDs for child IDs. Leaf
+	 * nodes know the IDs to the next leaf node.
+	 */
 	private static class TreeNode<T extends Comparable<T> & Serializable> implements
 			ExternalizableMemoryObject
 	{
 		private static final long serialVersionUID = -309297143139643805L;
 
+		/**
+		 * The node of this node in the tree, where 1 is a leaf node. QQQ
+		 */
 		public int nodeHeight;
+
+		/**
+		 * The block ID of the next leaf node. This is null if this node isn't a leaf node.
+		 */
 		public String nextPartitionId;
+
+		/**
+		 * The data stored in this node.
+		 */
 		public SplittableSet<T> structure;
+
+		/**
+		 * Used when flushing to disk to determine if the data need to be rewritten.
+		 */
 		private transient boolean isDirty = true;
 
 		public TreeNode(SplittableSet<T> type, int nodeHeight)
@@ -54,6 +77,7 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		private void readObject(ObjectInputStream inputStream) throws IOException,
 				ClassNotFoundException
 		{
+			// A freshly deserialized object isn't dirty.
 			inputStream.defaultReadObject();
 			isDirty = false;
 		}
@@ -65,9 +89,24 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		}
 	}
 
+	/**
+	 * Stores all the nodes of the tree where a node's ID is '<minValueInNode>-<nodeHeight>'.
+	 */
 	private ExternalMemoryObjectCache<TreeNode<T>> setCache;
+
+	/**
+	 * The maximum number of elements to store in a node before splitting it.
+	 */
 	private int maxSetSize = 100000;
+
+	/**
+	 * The number of elements stored in the tree.
+	 */
 	private long size = 0;
+
+	/**
+	 * The maximum node height in this tree.
+	 */
 	private int treeHeight = 1;
 
 	public ExternalMemorySplittableSet(File storageDirectory)
@@ -108,6 +147,9 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		setCache.register("-1", rootNode);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean add(T u)
 	{
@@ -124,6 +166,15 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		return result;
 	}
 
+	/**
+	 * Splits the specified node into two if it is larger than the maximum node size.
+	 * 
+	 * @param searchPath
+	 *            The search path used to find the specified node.
+	 * @param leafNode
+	 *            The node that may need to be split.
+	 * @return True if the node was split, false otherwise.
+	 */
 	private boolean splitNodeIfNecessary(String[] searchPath, TreeNode<T> leafNode)
 	{
 		boolean hasSplit = false;
@@ -135,6 +186,8 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 			String newNodeId = midValue + "-" + leafNode.nodeHeight;
 			TreeNode<T> newNode = new TreeNode<T>(null, leafNode.nodeHeight);
 			newNode.structure = leafNode.structure.split(midValue);
+
+			// The new node is a leaf node, so update sibling ID pointers.
 			if (newNode.nodeHeight == 1)
 			{
 				newNode.setNextPartitionId(leafNode.nextPartitionId);
@@ -145,6 +198,7 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 			TreeNode<T> parentNode = null;
 			if (leafNode.nodeHeight == searchPath.length)
 			{
+				// The root node was split, so create a new root node.
 				treeHeight++;
 				parentNode = new TreeNode<T>(leafNode.structure, treeHeight);
 				setCache.register("-" + treeHeight, parentNode);
@@ -152,6 +206,7 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 				parentNode = setCache.get(searchPath[leafNode.nodeHeight]);
 			parentNode.structure.add(midValue);
 
+			// The parent node may need to be split so check it as well.
 			if (parentNode.nodeHeight <= searchPath.length)
 				splitNodeIfNecessary(searchPath, parentNode);
 		}
@@ -159,6 +214,10 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		return hasSplit;
 	}
 
+	/**
+	 * Returns the search path to the leaf node that the specified element exists in or would be
+	 * placed in if inserted. The search path is an array of IDs where index 0 is the leaf node.
+	 */
 	private String[] getLeafNodeForElem(T u)
 	{
 		String[] searchPath = new String[treeHeight];
@@ -179,6 +238,9 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		return searchPath;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean remove(T x)
 	{
@@ -194,6 +256,17 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		return result;
 	}
 
+	/**
+	 * Merges the specified node into one of it's sibling nodes if it is smaller than the minimum
+	 * node size (maxSize / 4). The sibling with the smaller node size will be chosen for the merge.
+	 * 
+	 * @param x
+	 *            The element that has just been deleted.
+	 * @param searchPath
+	 *            The search path used to find the specified node.
+	 * @param curNode
+	 *            The node that may need to be merged.
+	 */
 	private void mergeNodeIfNecessary(T x, String[] searchPath, TreeNode<T> curNode)
 	{
 		if (treeHeight > curNode.nodeHeight && curNode.structure.size() < (maxSetSize >> 3))
@@ -202,6 +275,8 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 			T deleteBranch = parentNode.structure.floor(x);
 			T leftBranch = null;
 			T rightBranch = null;
+
+			// Find the sibling to the node that is too smaller.
 			if (deleteBranch == null)
 			{
 				rightBranch = parentNode.structure.iterator().next();
@@ -211,6 +286,7 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 				rightBranch = parentNode.structure.higher(deleteBranch);
 			}
 
+			// Figure out which sibling to merge into. The smaller sibling will be chosen.
 			TreeNode<T> smallerNode = null;
 			TreeNode<T> biggerNode = null;
 			if (leftBranch == null && rightBranch == null)
@@ -247,21 +323,30 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 			smallerNode.setNextPartitionId(biggerNode.nextPartitionId);
 			setCache.unregister(deleteBranch + "-" + smallerNode.nodeHeight);
 
+			// The merged node may now be too big, see if it should now be split.
 			if (!splitNodeIfNecessary(searchPath, smallerNode))
 			{
 				if (parentNode.structure.size() == 0)
 				{
+					/*
+					 * If the parent node is now empty, the maximum tree height needs to be lowered
+					 * to update the root node.
+					 */
 					if (parentNode.nodeHeight != treeHeight)
 						throw new RuntimeException("Trying to delete non-root parent.");
 
 					setCache.unregister("-" + treeHeight);
 					treeHeight--;
 				} else
+					// The parent node may now need to be merged as well.
 					mergeNodeIfNecessary(x, searchPath, parentNode);
 			}
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean contains(T x)
 	{
@@ -270,19 +355,39 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		return leafNode.structure.contains(x);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public long size()
 	{
 		return size;
 	}
 
+	/**
+	 * This class keeps track of a range search iterator over the tree.
+	 */
 	private class EMSetIterator implements Iterator<T>
 	{
+		/**
+		 * The current leaf node being iterated over.
+		 */
 		private TreeNode<T> curNode;
+
+		/**
+		 * The current node iterator being used to pull elements.
+		 */
 		private Iterator<T> currentSetIter;
 
+		/**
+		 * The next element that a call to next() should return.
+		 */
 		private T nextElem;
 
+		/**
+		 * The end range of elements to return (exclusive). null means iterate over all remaining
+		 * elements.
+		 */
 		private T to;
 
 		public EMSetIterator(T from, T to)
@@ -306,6 +411,7 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		{
 			if (nextElem == null)
 			{
+				// If the current iterator is empty, the next leaf node needs to be iterated over.
 				if (!currentSetIter.hasNext())
 				{
 					if (curNode.nextPartitionId != null)
@@ -314,6 +420,8 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 						currentSetIter = curNode.structure.iterator();
 					}
 				}
+
+				// Get the next element ready if one exists.
 				if (currentSetIter.hasNext())
 					nextElem = currentSetIter.next();
 			}
@@ -344,6 +452,9 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 		return new EMSetIterator(null, null);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Iterator<T> iterator(T from, T to)
 	{
@@ -353,18 +464,27 @@ public class ExternalMemorySplittableSet<T extends Comparable<T> & Serializable>
 			return new EMSetIterator(to, from);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void close()
 	{
 		setCache.close();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public EMPrefixSearchableSet<T> createNewStructure(File newStorageDir)
 	{
 		return new ExternalMemorySplittableSet<T>(newStorageDir, this);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public ExternalMemoryObjectCache<? extends ExternalizableMemoryObject> getObjectCache()
 	{

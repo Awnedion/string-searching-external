@@ -26,6 +26,11 @@ import org.apache.commons.codec.binary.Hex;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 
+/**
+ * This class caches ExternalizableMemoryObjects to disk when a specified byte limit in RAM is
+ * reached. Disk data is auto-loaded into cache when needed. Data is cached onto disk in a
+ * least-recently used fashion. Data that is cached to disk can optionally make use of compression.
+ */
 public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 {
 	/**
@@ -34,8 +39,16 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	 */
 	private static final long BASE_CACHED_BLOCK_BYTE_SIZE = 160;
 
+	/**
+	 * A block is a ExternalizableMemoryObject that keeps track of its in-memory size.
+	 */
 	private class Block
 	{
+		/**
+		 * The last known size of the ExternalizableMemoryObject stored in this block. The size is
+		 * stored to reduce re-computation work and to keep track of how much data the cache is
+		 * using in total.
+		 */
 		public long previousByteSize = 0;
 		public T data;
 
@@ -44,6 +57,9 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 			this.data = data;
 		}
 
+		/**
+		 * Updates this block's size and the total memory size of the entire cache.
+		 */
 		public void updateSizeEstimate()
 		{
 			inMemoryByteEstimate -= previousByteSize;
@@ -62,17 +78,61 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		NONE, GZIP, SNAPPY
 	}
 
+	/**
+	 * The currently RAM usage, in bytes, of this cache.
+	 */
 	private long inMemoryByteEstimate = 0;
+
+	/**
+	 * The maximum number of bytes that this cache can store in RAM before flushing data to disk.
+	 */
 	private long maxCacheMemorySize;
+
+	/**
+	 * The type of compress to use when flushing data to disk.
+	 */
 	private CompressType compress;
+
+	/**
+	 * The directory to store data in.
+	 */
 	private File storageDirectory;
+
+	/**
+	 * A map of block ID to block data. The map also has a linked list using the access order of the
+	 * blocks for its element ordering.
+	 */
 	private LinkedHashMap<String, Block> cachedBlocks = new LinkedHashMap<String, Block>(16, 0.75f,
 			true);
+
+	/**
+	 * The total number of bytes in RAM that was flushed to disk.
+	 */
 	private long uncompressBytes = 0;
+
+	/**
+	 * The total number of bytes that was stored onto disk after compression.
+	 */
 	private long compressedBytes = 0;
+
+	/**
+	 * The total time in ms that has been spent performing serialization.
+	 */
 	private long serializationTime = 0;
+
+	/**
+	 * The total time in ms that has been spent writing data to disk.
+	 */
 	private long diskWriteTime = 0;
+
+	/**
+	 * The total time in ms that has been spent reading data from disk.
+	 */
 	private long diskReadTime = 0;
+
+	/**
+	 * The hashing algorithm to use when computing file name from block ID.
+	 */
 	private MessageDigest md5Hash;
 
 	public ExternalMemoryObjectCache(File directory)
@@ -105,6 +165,14 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		}
 	}
 
+	/**
+	 * Adds a new ExternalizableMemoryObject to the cache with the specified ID.
+	 * 
+	 * @param index
+	 *            The ID of the ExternalizableMemoryObject.
+	 * @param data
+	 *            The ExternalizableMemoryObject to add into the cache.
+	 */
 	public void register(String index, T data)
 	{
 		Block block = getBlock(index);
@@ -112,6 +180,9 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		block.updateSizeEstimate();
 	}
 
+	/**
+	 * Returns the ExternalizableMemoryObject stored with the specified ID.
+	 */
 	public T get(String index)
 	{
 		Block block = getBlock(index);
@@ -119,6 +190,9 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		return block.data;
 	}
 
+	/**
+	 * Removes the ExternalizableMemoryObject with the specified ID from the cache.
+	 */
 	public void unregister(String index)
 	{
 		Block block = cachedBlocks.remove(index);
@@ -127,12 +201,17 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		new File(storageDirectory, blockFileName).delete();
 	}
 
+	/**
+	 * Returnss the block stored with the specified ID from RAM if possible, otherwise the block
+	 * will be loaded from disk into the cache first.
+	 */
 	@SuppressWarnings("unchecked")
 	private Block getBlock(String blockId)
 	{
 		Block block = cachedBlocks.get(blockId);
 		try
 		{
+			// The block is not in RAM so load it from disk.
 			if (block == null)
 			{
 				block = new Block(null);
@@ -142,10 +221,13 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				{
 					long startTime = System.currentTimeMillis();
 					InputStream is = new BufferedInputStream(new FileInputStream(blockFile));
+
+					// Decompress if necessary.
 					if (compress == CompressType.SNAPPY)
 						is = new SnappyInputStream(is);
 					else if (compress == CompressType.GZIP)
 						is = new GZIPInputStream(is);
+
 					ObjectInputStream objStream = new ObjectInputStream(is);
 					block.data = (T) objStream.readObject();
 					objStream.close();
@@ -156,6 +238,10 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				cachedBlocks.put(blockId, block);
 			}
 
+			/*
+			 * If the new block made the cache too large, flush the least-recently used block to
+			 * disk.
+			 */
 			if (inMemoryByteEstimate > maxCacheMemorySize && cachedBlocks.size() > 1)
 			{
 				Iterator<Entry<String, Block>> iter = cachedBlocks.entrySet().iterator();
@@ -172,6 +258,10 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 	private void flushBlock(String block)
 	{
 		Block flushBlock = cachedBlocks.remove(block);
+
+		/*
+		 * If the block was modified since being loaded, the new data needs to be saved to disk.
+		 */
 		if (flushBlock.data.isDirty())
 		{
 			flushBlock.updateSizeEstimate();
@@ -180,10 +270,13 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 				long startTime = System.currentTimeMillis();
 				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 				OutputStream os = bytes;
+
+				// Compress if necessary.
 				if (compress == CompressType.SNAPPY)
 					os = new SnappyOutputStream(os);
 				else if (compress == CompressType.GZIP)
 					os = new GZIPOutputStream(os);
+
 				ObjectOutputStream out = new ObjectOutputStream(os);
 				out.writeObject(flushBlock.data);
 				out.close();
@@ -205,11 +298,17 @@ public class ExternalMemoryObjectCache<T extends ExternalizableMemoryObject>
 		inMemoryByteEstimate -= flushBlock.previousByteSize;
 	}
 
+	/**
+	 * Returns an MD5 hash of the specified block ID.
+	 */
 	private String convertBlockIdToFilename(String blockId)
 	{
 		return Hex.encodeHexString(md5Hash.digest(blockId.getBytes()));
 	}
 
+	/**
+	 * Flushes all blocks still remaining in RAM.
+	 */
 	public void close()
 	{
 		for (String block : new HashSet<String>(cachedBlocks.keySet()))

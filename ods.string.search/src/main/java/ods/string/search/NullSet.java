@@ -8,6 +8,10 @@ import ods.string.search.partition.EMPrefixSearchableSet;
 import ods.string.search.partition.ExternalMemoryObjectCache;
 import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 
+/**
+ * This class implements a set with dummy method implementations. This is used to time the overhead
+ * of performance test suites.
+ */
 public class NullSet<T extends Comparable<T> & Serializable> implements EMPrefixSearchableSet<T>
 {
 	private class NulIterator implements Iterator<T>
