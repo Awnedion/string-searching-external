@@ -14,10 +14,10 @@ import java.util.Iterator;
 import ods.string.search.partition.splitsets.SplittableSet;
 
 /**
- * This class implements a variation of the Patricia Trie data structure. This is a tree whose
- * internal nodes all have 2 or more children and whose edges are labelled with strings. Each leaf,
- * v, corresponds to a string stored in the trie that can be obtained by concatenating the labels of
- * all edges on the path from the root to v.
+ * This class implements a bianry Patricia Trie data structure. This is a tree whose internal nodes
+ * all have up to 2 children and whose edges are labelled with bitstrings. Each leaf, v, corresponds
+ * to a string stored in the trie that can be obtained by concatenating the labels of all edges on
+ * the path from the root to v.
  * 
  * In this implementation, the edge labels have been merged into the nodes themselves to remove the
  * need of an Edge type.
@@ -31,6 +31,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	 */
 	private static final int BYTES_PER_NODE = 112;
 
+	/**
+	 * A bitstring consists are an array of bytes and the number of bits to use from the array.
+	 */
 	static class BitString
 	{
 		public int bitsUsed;
@@ -61,6 +64,10 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		 */
 		BitString bits;
 
+		/**
+		 * The number of children nodes under this node including itself. A value of 0 means this is
+		 * a pointer node.
+		 */
 		int subtreeSize;
 
 		/**
@@ -68,8 +75,14 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		 */
 		boolean valueEnd;
 
+		/**
+		 * The node representing values whose next bit is a 0.
+		 */
 		Node leftChild;
 
+		/**
+		 * The node representing values whose next bit is a 1.
+		 */
 		Node rightChild;
 
 		Node parent;
@@ -119,6 +132,17 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 			return result;
 		}
 
+		/**
+		 * Serialization format:
+		 * 
+		 * <pre>
+		 * <binary flags byte>
+		 * <bitsUsed integer or short or byte>
+		 * <label byte array>
+		 * <left child serialization>
+		 * <right child serialization>
+		 * </pre>
+		 */
 		public void writeExternal(ObjectOutput out) throws IOException
 		{
 			byte flags = 0;
@@ -151,6 +175,17 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 				rightChild.writeExternal(out);
 		}
 
+		/**
+		 * Serialization format:
+		 * 
+		 * <pre>
+		 * <binary flags byte>
+		 * <bitsUsed integer or short or byte>
+		 * <label byte array>
+		 * <left child serialization>
+		 * <right child serialization>
+		 * </pre>
+		 */
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
 		{
 			byte flags = in.readByte();
@@ -199,12 +234,23 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	}
 
 	/**
-	 * This class is used to store a node and string as a single value.
+	 * This class is used to store a the progress of a search.
 	 */
 	protected static class SearchPoint
 	{
+		/**
+		 * The current node matched to a search string.
+		 */
 		public Node lastMatchingNode;
+
+		/**
+		 * The remaining bits that haven't been matched yet.
+		 */
 		public BitString leftOver;
+
+		/**
+		 * The number of bit that have been matched.
+		 */
 		public int bitsMatched;
 
 		public SearchPoint(Node n, byte[] s)
@@ -220,6 +266,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		}
 	}
 
+	/**
+	 * Provides instructions on how to transform a bit string to a data object and vice versa.
+	 */
 	interface ByteArrayConversion
 	{
 		byte[] getBytes(Object val);
@@ -264,6 +313,16 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		}
 	}
 
+	/**
+	 * @param prefixNode
+	 *            A bit string that contains a common bit prefix to the suffixNode bit string. Upon
+	 *            return from this call, this bit string will only contain the common prefix bits,
+	 *            any extra bits will disappear.
+	 * @param suffixNode
+	 *            A bit string that contains a common bit prefix to the prefixNode bit string. Upon
+	 *            return from this call, this bit string will only contain that bits after the
+	 *            shared prefix, the prefix bits will be discarded.
+	 */
 	public static void splitOnPrefix(BitString prefixNode, BitString suffixNode)
 	{
 		int matchedBits = getCommonPrefixBits(prefixNode, suffixNode);
@@ -285,6 +344,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		suffixNode.bitsUsed -= matchedBits;
 	}
 
+	/**
+	 * Returns the number of prefix bits that the two specified bit strings have in common.
+	 */
 	public static int getCommonPrefixBits(BitString node1, BitString node2)
 	{
 		int matchedBits = 0;
@@ -318,6 +380,13 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		return matchedBits;
 	}
 
+	/**
+	 * 
+	 * @param prefixNode
+	 *            The bit string that will be appended to.
+	 * @param suffixNode
+	 *            The bit string to append on to prefixNode.
+	 */
 	public static void appendOnNode(BitString prefixNode, BitString suffixNode)
 	{
 		int requiredLength = (int) (Math.ceil((prefixNode.bitsUsed + suffixNode.bitsUsed) / 8.));
@@ -356,6 +425,9 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 	private transient boolean dirty = true;
 	private long dataBytesEstimate = 0;
 
+	/**
+	 * A bit string that represents that root node of another trie partition.
+	 */
 	protected transient BitString childTrieLabel;
 
 	public BinaryPatriciaTrie()
@@ -383,6 +455,10 @@ public class BinaryPatriciaTrie<T extends Comparable<T> & Serializable> implemen
 		return false;
 	}
 
+	/**
+	 * @return 0 if the element was added successfully, -1 if the element already existed. Otherwise
+	 *         the number of bits matched before finding a pointer node to another partition.
+	 */
 	public int add(byte[] bytesToAdd)
 	{
 		SearchPoint lastNode = findLastNode(bytesToAdd);

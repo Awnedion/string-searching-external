@@ -12,12 +12,35 @@ import ods.string.search.partition.splitsets.ExternalizableMemoryObject;
 
 import org.apache.commons.codec.binary.Hex;
 
+/**
+ * This class represents a Partitioned Patricia Trie. Nodes are binary based having up to two
+ * branches (0 bit, 1 bit). Edges are compacted able to store multiple bits.
+ * 
+ * Partitions are created by trying to split the current partition in half by default. The partition
+ * split node can be forced to have a minimum tree depth before being eligible.
+ */
 public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implements
 		EMPrefixSearchableSet<T>
 {
+	/**
+	 * Stores all partitions.
+	 */
 	private ExternalMemoryObjectCache<BinaryPatriciaTrie<T>> trieCache;
+
+	/**
+	 * The maximum size a trie parition can be before being split.
+	 */
 	private int maxSetSize = 100000;
+
+	/**
+	 * The current number of elements stored in the trie.
+	 */
 	private long size = 0;
+
+	/**
+	 * The minimum depth in a trie partition that a node has to be before being eligible to be the
+	 * root of a new partition.
+	 */
 	private int minPartitionDepth;
 
 	public ExternalMemoryTrie(File storageDirectory)
@@ -60,6 +83,9 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		minPartitionDepth = baseConfig.minPartitionDepth;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean add(T u)
 	{
@@ -67,6 +93,8 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 
 		byte[] valueAsBytes = curTrie.convertToBytes(u);
 		int result;
+
+		// Traverse between partitions if the search path encounters a pointer node.
 		while ((result = curTrie.add(valueAsBytes)) > 0)
 			curTrie = trieCache.get(getTrieIdFromBytes(valueAsBytes, result));
 
@@ -81,6 +109,9 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		return result == 0;
 	}
 
+	/**
+	 * Splits the specified partition if it's larger than the maximum allowed partition size.
+	 */
 	private void splitIfNecessary(BinaryPatriciaTrie<T> curTrie)
 	{
 		if (curTrie.r.subtreeSize > maxSetSize)
@@ -92,11 +123,24 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		}
 	}
 
+	/**
+	 * Converts the specified bit string into an ID string used to identify the trie partition whose
+	 * root node stores the specified bit string.
+	 * 
+	 * @param value
+	 *            The bit string to convert to an ID.
+	 * @param bitsUsed
+	 *            The number of bits from the byte array to use in the ID.
+	 */
 	private String getTrieIdFromBytes(byte[] value, int bitsUsed)
 	{
 		int fullBytesUsed = bitsUsed / 8;
 		int remainingBits = bitsUsed % 8;
+
+		// Convert complete bytes into it's hex encoding.
 		String result = Hex.encodeHexString(value).substring(0, fullBytesUsed * 2);
+
+		// Convert the remaining bits into a string represented bit string.
 		if (remainingBits > 0)
 		{
 			result += "~";
@@ -113,6 +157,9 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		return result;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean remove(T x)
 	{
@@ -122,6 +169,8 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 
 		BinaryPatriciaTrie<T> parentTrie = null;
 		String curTrieId = "~";
+
+		// Traverse between partitions if the search path encounters a pointer node.
 		while ((result = curTrie.remove(valueAsBytes)) > 0)
 		{
 			parentTrie = curTrie;
@@ -187,6 +236,9 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		return result == 0;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public boolean contains(T x)
 	{
@@ -199,17 +251,40 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 		return result == 0;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public long size()
 	{
 		return size;
 	}
 
+	/**
+	 * This class keeps track of an iterator's state while iterating over partitions and elements in
+	 * a depth first search way.
+	 */
 	private class EMTrieIterator implements Iterator<T>
 	{
+		/**
+		 * Stores an incomplete iterator per partition. Iterators are traversed in a depth first
+		 * search way.
+		 */
 		private Stack<Iterator<SearchPoint>> iterators = new Stack<Iterator<SearchPoint>>();
+
+		/**
+		 * The next iterator result.
+		 */
 		private T nextResult;
+
+		/**
+		 * The prefix that all returned results must match. A 0 length array returns all results.
+		 */
 		private byte[] prefix;
+
+		/**
+		 * Cache the operation to convert bit strings into actual data types.
+		 */
 		private ByteArrayConversion converter;
 
 		public EMTrieIterator(byte[] prefix)
@@ -228,14 +303,18 @@ public class ExternalMemoryTrie<T extends Comparable<T> & Serializable> implemen
 			Iterator<SearchPoint> curIter = null;
 			while (!iterators.isEmpty() && nextResult == null)
 			{
+				// Find the first iterator that isn't empty.
 				while (!iterators.isEmpty() && !((curIter = iterators.pop()).hasNext()))
 					;
+
+				// The last iterator is empty.
 				if (curIter == null || !curIter.hasNext())
 					return false;
 
 				SearchPoint node = curIter.next();
 				if (node.lastMatchingNode.subtreeSize == 0)
 				{
+					// Found a pointer node, create a new iterator and use it.
 					iterators.push(curIter);
 					curIter = trieCache.get(
 							getTrieIdFromBytes(node.leftOver.label, node.leftOver.bitsUsed))
